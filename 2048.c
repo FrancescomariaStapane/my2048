@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define N_ROWS 4
-#define N_COLS 4
+//#define N_ROWS 4
+//#define N_COLS 4
 typedef struct Board_State{
-
-int values[N_COLS][N_ROWS];
+	int* v;
+	//int values[N_COLS][N_ROWS];
+	int ** values;
 }board_state;
 
 void init_game(board_state* state);
@@ -20,12 +21,27 @@ void crunch_line(int* line, int len);
 int get_new_tile_value();
 int step(board_state* state, char move);
 int fill_new_square(board_state* state);
+int new_board_state(board_state* state);
+void free_board_state(board_state* state);
+
+
+int N_COLS = 4;
+int N_ROWS = 4;
 
 
 int main(int argc, char** argv){
+	if(argc == 3){
+		N_COLS = atoi(argv[1]);
+		N_ROWS =atoi(argv[2]);
+
+	}
 	int seed=time(NULL);
 	srand(seed);
 	board_state state;
+	if(new_board_state(&state)){
+		printf("could not instantiate game\n");
+		return -1;
+	}
 	init_game(&state);
 	print_state(state);
 	
@@ -37,58 +53,34 @@ int main(int argc, char** argv){
 			scanf(" %c",&move);
 			game_over = step(&state, move);
 			print_state(state);
+
 		}while(!game_over);
+		printf("GAME OVER\n");
+		init_game(&state);
+		
 	}
-	printf("GAME OVER\n");
-	init_game(&state);
-	/*printf("\n");
-	crunch_board(&state,'r');
-	printf("finale state:\n");
-	print_state(state);
-	printf("\n");
-	init_game(&state);
-	crunch_board(&state,'l');
-	//print_state(state);
-	printf("\n");
-	printf("final state:\n");
-	print_state(state);
-	printf("\n");
-	init_game(&state);
-	crunch_board(&state,'u');
-	//print_state(state);
-	printf("final state:\n");
-	print_state(state);
-
-	printf("\n");
-	init_game(&state);
-	crunch_board(&state,'d');
-	printf("finale state:\n");
-	print_state(state);
-
-	//print_state(state);
-	printf("\n");
-	*/
-	/*
-	int *line = malloc(8 *sizeof(int));
-	int l[8]={2,4,8,16,32,64,128,256};
-	//int l[8]={2,2,4,0,8,8,8,2};
-
-	line = l;
-	for (int i = 0; i< 8; i++){
-		printf("%d ",line[i]);
-	}
-	
-	//crunch_line(line, 8);
-	crunch_line(line, 8);
-
-	for (int i = 0; i< 8; i++){
-		printf("%d ",line[i]);
-	}
-	printf("\n");
-	*/
+	free_board_state(&state);
 }
 
 
+int new_board_state(board_state* state){
+	printf("%d\n", N_COLS*N_ROWS);
+	if((state->v = malloc(N_ROWS * N_COLS * sizeof(int))) == NULL)
+		return -1;
+	if ((state->values = malloc(N_ROWS * sizeof(int*))) == NULL)
+		return -1;
+	for(int i=0; i< N_ROWS;i++){
+		state->values[i]=&(state->v[N_COLS * i]);
+	}
+	return 0;
+}
+void free_board_state(board_state* state){
+	for(int i = 0; i < N_ROWS; i++){
+		free(state->values[i]);
+	}
+	free(state->v);
+
+}
 void init_game(board_state* state){
 	for(int i=0; i<N_ROWS; i++) {
 		for(int j=0; j<N_COLS; j++){
