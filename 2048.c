@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 //#define N_ROWS 4
 //#define N_COLS 4
@@ -19,15 +21,16 @@ int get_new_tile();
 void crunch_board(board_state* state, char move);
 void crunch_line(int* line, int len);
 int get_new_tile_value();
-int step(board_state* state, char move);
+int step(board_state* state, char move, board_state* prev_state, int *undos);
 int fill_new_square(board_state* state);
 int new_board_state(board_state* state);
 void free_board_state(board_state* state);
-
+void copy_board_state(board_state* src, board_state* dst);
+bool are_boards_equal(board_state s1, board_state s2);
 
 int N_COLS = 4;
 int N_ROWS = 4;
-
+int undos = 2;
 
 int main(int argc, char** argv){
 	if(argc == 3){
@@ -37,34 +40,36 @@ int main(int argc, char** argv){
 	}
 	int seed=time(NULL);
 	srand(seed);
-	board_state state;
-	if(new_board_state(&state)){
+	board_state cur_state;
+	board_state prev_state;
+
+	if(new_board_state(&cur_state) || new_board_state(&prev_state)){
 		printf("could not instantiate game\n");
 		return -1;
 	}
-	init_game(&state);
-	print_state(state);
-	
+
+	printf("moves:\nl -> left\nr -> right\nu -> up\nd -> down\nc -> undo\n\n");
+	init_game(&cur_state);
+	print_state(cur_state);
 	while(1){
 		int game_over = 0;
 		do{
 			char move;
 			printf("input next move:\n");
 			scanf(" %c",&move);
-			game_over = step(&state, move);
-			print_state(state);
-
+			game_over = step(&cur_state, move, &prev_state, &undos);
+			print_state(cur_state);
+			printf("\n");
 		}while(!game_over);
 		printf("GAME OVER\n");
-		init_game(&state);
+		init_game(&cur_state);
 		
 	}
-	free_board_state(&state);
+	free_board_state(&cur_state);
 }
 
 
 int new_board_state(board_state* state){
-	printf("%d\n", N_COLS*N_ROWS);
 	if((state->v = malloc(N_ROWS * N_COLS * sizeof(int))) == NULL)
 		return -1;
 	if ((state->values = malloc(N_ROWS * sizeof(int*))) == NULL)
@@ -75,9 +80,10 @@ int new_board_state(board_state* state){
 	return 0;
 }
 void free_board_state(board_state* state){
-	for(int i = 0; i < N_ROWS; i++){
-		free(state->values[i]);
-	}
+	//for(int i = 0; i < N_ROWS; i++){
+	//	free(state->values[i]);
+	//}
+	free(state->values);
 	free(state->v);
 
 }
@@ -177,8 +183,8 @@ void crunch_board(board_state* state, char move){
 
 		}
 		free(column_copy);
-
 	}
+	return;
 }
 int get_new_tile_value(){
 	//return 2 with p = 0.9 and 4 with p = 0.1
@@ -220,7 +226,43 @@ int fill_new_square(board_state* state){
 	return 0;
 }
 
-int step(board_state* state, char move){
-	crunch_board(state, move);
-	return fill_new_square(state);
+int step(board_state* state, char move, board_state* prev_state, int *undos){
+	bool is_new_move=true;
+	board_state tmp_state;
+	new_board_state(&tmp_state);
+	copy_board_state(state, &tmp_state);
+	if(move == 'c'){
+		is_new_move = false;
+		copy_board_state(prev_state, state);
+	}
+	else{
+		crunch_board(state, move);
+		//printf("prevstate: {\n");
+		//print_state(*prev_state);
+		//printf("\n");
+		//for(int i = 0; i< N_COLS * N_ROWS; i++){
+		//	printf("%d ", prev_state->v[i]);
+		//}
+		//printf("}\n");
+		is_new_move = !are_boards_equal(tmp_state, *state);
+
+	}
+	if(is_new_move){
+		
+		fill_new_square(state);
+		copy_board_state(&tmp_state, prev_state);
+	}
+	free_board_state(&tmp_state);
+	return 0; // return check_game_over(state)
+}
+bool are_boards_equal(board_state s1, board_state s2){
+	for(int i = 0; i< N_ROWS * N_COLS; i++){
+		if(s1.v[i]!=s2.v[i]){
+			return false;
+		}
+	}
+	return true;
+}
+void copy_board_state(board_state *src, board_state* dst){
+	memcpy(dst->v, src->v, N_COLS*N_ROWS * sizeof(int));
 }
