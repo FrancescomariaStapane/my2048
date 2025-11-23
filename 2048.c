@@ -27,6 +27,7 @@ int new_board_state(board_state* state);
 void free_board_state(board_state* state);
 void copy_board_state(board_state* src, board_state* dst);
 bool are_boards_equal(board_state s1, board_state s2);
+bool check_game_over(board_state state);
 
 int N_COLS = 4;
 int N_ROWS = 4;
@@ -63,7 +64,7 @@ int main(int argc, char** argv){
 		}while(!game_over);
 		printf("GAME OVER\n");
 		init_game(&cur_state);
-		
+		print_state(cur_state);
 	}
 	free_board_state(&cur_state);
 }
@@ -253,7 +254,7 @@ int step(board_state* state, char move, board_state* prev_state, int *undos){
 		copy_board_state(&tmp_state, prev_state);
 	}
 	free_board_state(&tmp_state);
-	return 0; // return check_game_over(state)
+	return check_game_over(*state); // return check_game_over(state)
 }
 bool are_boards_equal(board_state s1, board_state s2){
 	for(int i = 0; i< N_ROWS * N_COLS; i++){
@@ -265,4 +266,22 @@ bool are_boards_equal(board_state s1, board_state s2){
 }
 void copy_board_state(board_state *src, board_state* dst){
 	memcpy(dst->v, src->v, N_COLS*N_ROWS * sizeof(int));
+}
+
+bool check_game_over(board_state state){
+	for(int i = 0; i < N_ROWS; i++){
+		for( int j = 0; j < N_COLS; j++){
+			if(state.values[i][j] == 0){
+				return false;
+			}
+			if(j < N_COLS -1 && state.values[i][j] == state.values[i][j+1]){
+				return false;
+			}
+			if(i < N_ROWS -1 && state.values[i][j] == state.values[i+1][j]){
+				return false;
+			}
+
+		}
+	}
+	return true;
 }
