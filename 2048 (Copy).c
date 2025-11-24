@@ -5,18 +5,18 @@
 #include <time.h>
 #include <stdbool.h>
 
-//#define state->n_rows 4
-//#define state->n_cols 4
+//#define N_ROWS 4
+//#define N_COLS 4
 typedef struct Board_State{
 	int* v;
-	//int values[state->n_cols][state->n_rows];
+	//int values[N_COLS][N_ROWS];
 	int ** values;
-	int n_rows, n_cols;
+	int n_row, n_col;
 }board_state;
 
 void init_game(board_state* state);
 void print_state(board_state state);
-//void get_rand_square(int* position);
+void get_rand_square(int* position);
 void get_rand_empty_square(board_state state, int* position);
 int get_new_tile();
 void crunch_board(board_state* state, char move);
@@ -30,8 +30,8 @@ void copy_board_state(board_state* src, board_state* dst);
 bool are_boards_equal(board_state s1, board_state s2);
 bool check_game_over(board_state state);
 
-//int state->n_cols = 4;
-//int state->n_rows = 4;
+//int N_COLS = 4;
+//int N_ROWS = 4;
 int undos = 2;
 
 int main(int argc, char** argv){
@@ -80,12 +80,10 @@ int new_board_state(board_state* state, int n_rows, int n_cols){
 	for(int i=0; i< n_rows;i++){
 		state->values[i]=&(state->v[n_cols * i]);
 	}
-	state->n_rows = n_rows;
-	state->n_cols = n_cols;
 	return 0;
 }
 void free_board_state(board_state* state){
-	//for(int i = 0; i < state->n_rows; i++){
+	//for(int i = 0; i < N_ROWS; i++){
 	//	free(state->values[i]);
 	//}
 	free(state->values);
@@ -93,10 +91,10 @@ void free_board_state(board_state* state){
 
 }
 void init_game(board_state* state){
-	for(int i=0; i<state->n_rows; i++) {
-		for(int j=0; j<state->n_cols; j++){
+	for(int i=0; i<N_ROWS; i++) {
+		for(int j=0; j<N_COLS; j++){
 			state->values[i][j]=0;
-			//state->values[i][j]= i*state->n_cols + j;
+			//state->values[i][j]= i*N_COLS + j;
 		}
 	}
 	fill_new_square(state);
@@ -105,8 +103,8 @@ void init_game(board_state* state){
 
 
 void print_state(board_state state){
-	for(int i=0; i<state.n_rows; i++){
-		for(int j=0; j<state.n_cols; j++){
+	for(int i=0; i<N_ROWS; i++){
+		for(int j=0; j<N_COLS; j++){
 			printf("%d ",state.values[i][j]);
 		}
 		printf("\n");
@@ -114,20 +112,20 @@ void print_state(board_state state){
 
 }
 
-/*void get_rand_square(int* position, int n_rows, int n_cols){
-	int row = rand()%n_rows;
-	int col = rand()%n_cols;
+void get_rand_square(int* position){
+	int row = rand()%N_ROWS;
+	int col = rand()%N_COLS;
 	position[0]=row;
 	position[1]=col;
-}*/
+}
 
 void get_rand_empty_square(board_state state, int* position){
 	//https://stackoverflow.com/questions/966108/choose-random-array-element-satisfying-certain-property
 	position[0]=-1;	
 	position[1]=-1;	
 	int  count = 0;
-	for(int i =0; i<state.n_rows; i++){
-		for(int j=0; j<state.n_cols; j++){
+	for(int i =0; i<N_ROWS; i++){
+		for(int j=0; j<N_COLS; j++){
 			if(!state.values[i][j] && !(rand()% ++count) ){
  				position[0] = i;
 				position[1] = j;
@@ -156,15 +154,15 @@ void crunch_board(board_state* state, char move){
 		orientation = -1;
 	}
 	if (move == 'r' || move == 'l'){ //horizontal
-		int* row_copy=(int *)malloc(state->n_cols *sizeof(int));							 
-		for (int i=0; i< state->n_rows; i++){
-			int start = orientation < 0 ? state->n_cols -1 : 0;
-			int end = orientation < 0 ? 0 : state->n_cols -1;
-			for(int j = start, k=0; k<state->n_cols; j+=orientation, k++){
+		int* row_copy=(int *)malloc(N_COLS *sizeof(int));							 
+		for (int i=0; i< N_ROWS; i++){
+			int start = orientation < 0 ? N_COLS -1 : 0;
+			int end = orientation < 0 ? 0 : N_COLS -1;
+			for(int j = start, k=0; k<N_COLS; j+=orientation, k++){
 				row_copy[k]=state->values[i][j];
 			}
-			crunch_line(row_copy, state->n_cols);
-			for(int j = start, k=0; k<state->n_cols; j+=orientation, k++){
+			crunch_line(row_copy, N_COLS);
+			for(int j = start, k=0; k<N_COLS; j+=orientation, k++){
 				state->values[i][j]=row_copy[k];
 			}
 			
@@ -172,16 +170,16 @@ void crunch_board(board_state* state, char move){
 		free(row_copy);
 	}
 	else{ //vertical
-		int* column_copy=malloc(state->n_rows*sizeof(int));							 
-		for (int j=0; j< state->n_cols; j++){
-			int start = orientation < 0 ? state->n_rows -1 : 0;
-			int end = orientation < 0 ? 0 : state->n_rows -1;
-			for(int i = start, k=0; k<state->n_rows; i+=orientation, k++){
+		int* column_copy=malloc(N_ROWS*sizeof(int));							 
+		for (int j=0; j< N_COLS; j++){
+			int start = orientation < 0 ? N_ROWS -1 : 0;
+			int end = orientation < 0 ? 0 : N_ROWS -1;
+			for(int i = start, k=0; k<N_ROWS; i+=orientation, k++){
 				column_copy[k]=state->values[i][j];
 			
 			}
-			crunch_line(column_copy,state->n_rows);
-			for(int i = start, k=0; k<state->n_rows; i+=orientation, k++){
+			crunch_line(column_copy,N_ROWS);
+			for(int i = start, k=0; k<N_ROWS; i+=orientation, k++){
 				state->values[i][j]=column_copy[k];
 					
 			}
@@ -234,7 +232,7 @@ int fill_new_square(board_state* state){
 int step(board_state* state, char move, board_state* prev_state, int *undos){
 	bool is_new_move=true;
 	board_state tmp_state;
-	new_board_state(&tmp_state, state->n_rows, state->n_cols);
+	new_board_state(&tmp_state);
 	copy_board_state(state, &tmp_state);
 	if(move == 'c'){
 		is_new_move = false;
@@ -245,7 +243,7 @@ int step(board_state* state, char move, board_state* prev_state, int *undos){
 		//printf("prevstate: {\n");
 		//print_state(*prev_state);
 		//printf("\n");
-		//for(int i = 0; i< state->n_cols * state->n_rows; i++){
+		//for(int i = 0; i< N_COLS * N_ROWS; i++){
 		//	printf("%d ", prev_state->v[i]);
 		//}
 		//printf("}\n");
@@ -261,7 +259,7 @@ int step(board_state* state, char move, board_state* prev_state, int *undos){
 	return check_game_over(*state); // return check_game_over(state)
 }
 bool are_boards_equal(board_state s1, board_state s2){
-	for(int i = 0; i< s1.n_rows * s1.n_cols; i++){
+	for(int i = 0; i< N_ROWS * N_COLS; i++){
 		if(s1.v[i]!=s2.v[i]){
 			return false;
 		}
@@ -269,19 +267,19 @@ bool are_boards_equal(board_state s1, board_state s2){
 	return true;
 }
 void copy_board_state(board_state *src, board_state* dst){
-	memcpy(dst->v, src->v, src->n_cols*src->n_rows * sizeof(int));
+	memcpy(dst->v, src->v, N_COLS*N_ROWS * sizeof(int));
 }
 
 bool check_game_over(board_state state){
-	for(int i = 0; i < state.n_rows; i++){
-		for( int j = 0; j < state.n_cols; j++){
+	for(int i = 0; i < N_ROWS; i++){
+		for( int j = 0; j < N_COLS; j++){
 			if(state.values[i][j] == 0){
 				return false;
 			}
-			if(j < state.n_cols -1 && state.values[i][j] == state.values[i][j+1]){
+			if(j < N_COLS -1 && state.values[i][j] == state.values[i][j+1]){
 				return false;
 			}
-			if(i < state.n_rows -1 && state.values[i][j] == state.values[i+1][j]){
+			if(i < N_ROWS -1 && state.values[i][j] == state.values[i+1][j]){
 				return false;
 			}
 
