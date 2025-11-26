@@ -48,7 +48,8 @@ void init_game(board_state* state){
 void print_state(board_state state){
 	for(int i=0; i<state.n_rows; i++){
 		for(int j=0; j<state.n_cols; j++){
-			printf("%d ",state.values[i][j]);
+			int value = state.values[i][j];
+			printf("%d ", value ? 1 << value : 0);
 		}
 		printf("\n");
 	}
@@ -56,7 +57,7 @@ void print_state(board_state state){
 }
 
 /*void get_rand_square(int* position, int n_rows, int n_cols){
-	int row = rand()%n_rows;
+	int row = rand()%n_rows;state.values[i][j]
 	int col = rand()%n_cols;
 	position[0]=row;
 	position[1]=col;
@@ -76,10 +77,6 @@ void get_rand_empty_square(board_state state, int* position){
 			}
 		}
 	}
-}
-
-int get_new_tile(){
-	return 2;
 }
 
 void crunch_board(board_state* state, char move){
@@ -134,7 +131,7 @@ void crunch_board(board_state* state, char move){
 }
 int get_new_tile_value(){
 	//return 2 with p = 0.9 and 4 with p = 0.1
-	return rand()%10 == 0 ? 4 : 2;
+	return rand()%10 == 0 ? 2 : 1;
 }
 void crunch_line(int* line, int len){
 	//il wall rappresenta la tile su cui va a sbattere la tile successiva non nulla durante il crunch
@@ -146,7 +143,7 @@ void crunch_line(int* line, int len){
 			continue;
 		}
 		if(line[i]==line[wall]){
-			line[wall]<<=1;
+			line[wall]+=1;
 			line[i]=0;
 			wall++;
 			continue;

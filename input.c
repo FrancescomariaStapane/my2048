@@ -14,11 +14,18 @@ static     struct termios old_termios, new_termios;
 void reset_terminal(){
     printf("\e[m"); //reset color changes
     printf("\e[?25h"); //show cursor
+    printf("\033[2J\033[?47l\0338"); //return to saved cursor and original buffer
+
+    // printf("\e[1;1H"); // Move to upper left corner
     fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
 }
 
 void configure_terminal(){
+    printf("\0337\033[?47h"); //save current cursor and switch to secondary buffer
+    printf("\e[2J"); // Clearing the screen
+
+    printf("\e[1;1H"); // Move to upper left corner
     tcgetattr(STDIN_FILENO, &old_termios);
     new_termios = old_termios;
     new_termios.c_lflag &= ~(ICANON | ECHO); //turn of echo and canonical mode

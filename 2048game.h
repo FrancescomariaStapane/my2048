@@ -1,5 +1,6 @@
 #ifndef LIB2048GAME_2048GAME_H
 #define LIB2048GAME_2048GAME_H
+#include<stdbool.h>
 
 typedef struct Board_State{
 	int* v;
@@ -13,7 +14,6 @@ void init_game(board_state* state);
 void print_state(board_state state);
 //void get_rand_square(int* position);
 void get_rand_empty_square(board_state state, int* position);
-int get_new_tile();
 void crunch_board(board_state* state, char move);
 void crunch_line(int* line, int len);
 int get_new_tile_value();
