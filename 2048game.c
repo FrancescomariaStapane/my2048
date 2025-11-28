@@ -57,7 +57,7 @@ void print_state(board_state state){
 }
 
 /*void get_rand_square(int* position, int n_rows, int n_cols){
-	int row = rand()%n_rows;state.values[i][j]
+	int row = rand()%n_rows;
 	int col = rand()%n_cols;
 	position[0]=row;
 	position[1]=col;
