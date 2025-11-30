@@ -7,6 +7,7 @@
 #include<stdlib.h>
 // #include<curses.h>
 
+
 static     struct termios old_termios, new_termios;
 // static int exit_loop = 0;
 

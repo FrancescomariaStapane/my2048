@@ -1,5 +1,5 @@
-#ifndef LIB2048GAME_2048GAME_H
-#define LIB2048GAME_2048GAME_H
+#ifndef LIBGAME_GAME_H
+#define LIBGAME_GAME_H
 #include<stdbool.h>
 
 typedef struct Board_State{

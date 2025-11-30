@@ -1,85 +1,5 @@
-#include"2048game.h"
-#include <stdio.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <stdbool.h>
-#define PIXEL_BYTES 16
-
-typedef struct Pixel{
-    int styleCode;
-    char value[PIXEL_BYTES]; 
-}Pixel;
-
-typedef  Pixel** PixelMatrix;
-typedef Pixel* PixelStorage;
-
-typedef struct Component{
-    int height;
-    int width;
-    PixelStorage pixels_s; // storage for screen chars
-    PixelMatrix pixels; //matrix for screen chars
-}Component;
-
-typedef struct BoardComponent{
-    Component component;
-    int cell_height;
-    int cell_width;
-    int n_cell_rows;
-    int n_cell_cols;
-    int n_rows;
-    int n_cols;
-}BoardComponent;
-
-typedef struct Panel{
-    int offset_x;
-    int offset_y;
-    Component component;
-}Panel;
-
-typedef struct Screen{
-    Panel* panels;
-    int n_panels;
-}Screen;
-
-
-typedef struct GameState{
-    Screen current;
-    Screen prev;
-    board_state state;
-}GameState;
-
-typedef enum STYLE{
-    GRID,
-    DEFAULT,
-    TEST
-}STYLE;
-
-int newComponent(Component * component, int height, int width);
-int newBoardComponent(BoardComponent* boardComponent, int n_rows, int n_cols, int cell_height, int cell_width);
-void freeComponent(Component* component);
-void freeBoardComponent(BoardComponent* boardComponent);
-void copyComponent(Component* dst, Component* src);
-void copyScreen(Screen* dst, Screen* src);
-void render(Screen cur, Screen nxt);
-void printScreen(Screen screen);
-void printComponent(Component component);
-void drawGameGrid(BoardComponent* board);
-int getStyleCode(STYLE style);
-char* getStyle(int styleCode);
-void renderPixel(Pixel pixel, int x, int y);
-void printStyledPixel(Pixel pixel);
-void newScreen(Screen* screen, int n_panels);
-void freeScreen(Screen* screen);
-void copyPanel(Panel* dst, Panel* src);
-void initScreen(Screen* srceen);
-void clearScreen(Screen* sceen);
-bool areScreensDissimilar(Screen sc1, Screen sc2);
-int getXOffsetRightOfPanel(Panel panel);
-int getYOffsetDownPanel(Panel panel);
-
-
+#include "renderer.h"
+#include<unistd.h>
 
 int exit_no_memory(){
     printf("Insufficient memory for pixel matrix\n");
@@ -89,10 +9,10 @@ int exit_no_memory(){
 int newComponent(Component * component, int height, int width){
     component -> height = height;
     component -> width = width;
-    if(!(component->pixels_s = malloc(height * width * sizeof(Pixel))))
+    if(!((component->pixels_s = malloc(height * width * sizeof(Pixel)))))
         exit_no_memory();
   
-    if(!(component->pixels = malloc(component->height * sizeof(Pixel*))))
+    if(!((component->pixels = malloc(component->height * sizeof(Pixel*)))))
         exit_no_memory();
 
     for(int i = 0; i< component->height; i++){
@@ -114,7 +34,7 @@ void copyComponent(Component* dst, Component* src){
 void copyPanel(Panel* dst, Panel* src){
     dst->offset_x = src->offset_x;
     dst->offset_y = src->offset_y;
-    copyComponent(&(dst->component), &(src->component));
+    copyComponent((dst->component), (src->component));
 }
 
 void copyScreen(Screen* dst, Screen* src){
@@ -142,15 +62,15 @@ int newBoardComponent(BoardComponent* boardComponent, int n_rows, int n_cols, in
 int getStyleCode(STYLE style){
     switch (style)
     {
-    case GRID:
-        return (-2);
-        break;
-    case TEST:
-        return -(100);
-        break;
-    default:
-        return (-1);
-        break;
+        case GRID:
+            return -2;
+        case TEST:
+            return -100;
+        case OVER_4096:
+            return -3;
+
+        default:
+            return (-1);
     }
 }
 
@@ -164,19 +84,23 @@ void printComponent(Component component){
 }
 
 void freeComponent(Component* component){
-    free(component->pixels_s);
-    free(component->pixels);
+    if(!component){
+        free(component->pixels_s);
+        free(component->pixels);
+    }
 }
 void freeBoardComponent(BoardComponent* boardComponent){
-    free(boardComponent->component.pixels_s);
-    free(boardComponent->component.pixels);
+    if(!boardComponent){
+        free(boardComponent->component.pixels_s);
+        free(boardComponent->component.pixels);
+    }
 }
 
 void drawGameGrid(BoardComponent* board){
     for(int i = 0; i < board->component.height; i++){
          for(int j = 0; j < board->component.width; j++){
             if(!(j % (board->cell_width + 1)) || !(i % (board->cell_height +1))){
-                strcpy(board->component.pixels[i][j].value,"█");
+                strcpy(board->component.pixels[i][j].value," ");
                 board->component.pixels[i][j].styleCode = getStyleCode(GRID);
             }else{
                 strcpy(board->component.pixels[i][j].value , " ");
@@ -192,27 +116,30 @@ void newScreen(Screen* screen, int n_panels){
     for( int i = 0; i< n_panels; i++){
         screen -> panels[i].offset_x = 0;
         screen -> panels[i].offset_y = 0;
-        screen -> panels[i].component.height = 0;
-        screen -> panels[i].component.width = 0;
-        screen -> panels[i].component.pixels_s = NULL;
-        screen -> panels[i].component.pixels = NULL;
+        screen -> panels[i].component = malloc(sizeof(Component));
+        screen -> panels[i].component -> height = 0;
+        screen -> panels[i].component -> width = 0;
+        screen -> panels[i].component -> pixels_s = NULL;
+        screen -> panels[i].component -> pixels = NULL;
     }
 }
 
 void clearScreen(Screen* screen){
      for(int i = 0; i < screen -> n_panels; i++){
-        int n_pixels = screen -> panels[i].component.height * screen -> panels[i].component.width;
+        int n_pixels = screen -> panels[i].component -> height * screen -> panels[i].component -> width;
         for (int j = 0; j < n_pixels; j++){
-            strcpy(screen -> panels[i].component.pixels_s[j].value ,"");
-            screen -> panels[i].component.pixels_s[j].styleCode = getStyleCode(DEFAULT);
+            strcpy(screen -> panels[i].component -> pixels_s[j].value ,"");
+            screen -> panels[i].component -> pixels_s[j].styleCode = getStyleCode(DEFAULT);
         }
     }
 }
 void freeScreen(Screen* screen){
-    for(int i = 0; i < screen -> n_panels; i++){
-        freeComponent(&(screen->panels[i].component));
+    if(!screen){
+        for(int i = 0; i < screen -> n_panels; i++){
+            freeComponent((screen->panels[i].component));
+        }
+        free(screen->panels);
     }
-    free(screen->panels);
 }
 
 
@@ -221,6 +148,8 @@ void freeScreen(Screen* screen){
 void renderPixel(Pixel pixel, int x, int y){
     printf("\e[%d;%dH", x + 1, y + 1); //move cursor
     printStyledPixel(pixel);
+    fflush(stdout);
+
 }
 
 //screens are dissimilar if their geometries differ, aka if contain different amount of panels or corresponding panels have different dimensions and/or offsets
@@ -234,9 +163,9 @@ bool areScreensDissimilar(Screen sc1, Screen sc2){
             return true;
         if(sc1.panels[i].offset_y != sc2.panels[i].offset_y)
             return true;
-        if(sc1.panels[i].component.height != sc2.panels[i].component.height)
+        if(sc1.panels[i].component -> height != sc2.panels[i].component -> height)
             return true;
-        if(sc1.panels[i].component.width != sc2.panels[i].component.width)
+        if(sc1.panels[i].component -> width != sc2.panels[i].component -> width)
             return true;
     }
     return false;
@@ -247,48 +176,102 @@ void printStyledPixel(Pixel pixel){
     char*formatEnd;
     // printf("%d",pixel.styleCode);
     switch (pixel.styleCode){
-    case 0:
-        //  BG: #FFF3F3
-        formatStart = "\x1B[48;5;231m";
-        formatEnd = "\x1B[49m";
-        break;
-        
-    case -1: //default
-        formatStart = "";
-        formatEnd = "";
-        break;
-    case -2:
-        // FG: #988E8E
-        formatStart = "\x1B[38;5;145m";
-        formatEnd = "\x1B[39m";
-        break;
-    case -100: //test
-        formatStart="\x1B[38;5;160m\x1B[48;5;78m\x1B[3m\x1B[9m";
-        formatEnd = "\x1B[29m\x1B[23m\x1B[49m\x1B[39m";
-        break;
-    default:
-        formatStart = "";
-        formatEnd = "";
-        break;
+        case 0:
+            formatStart = "\x1B[48;5;247m";
+            formatEnd = "\x1B[49m";
+            break;
+        case 1:
+            formatStart = "\x1B[38;5;16m\x1B[48;5;231m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 2:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;235;216;182m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 3:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;249;155;107m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 4:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;244;122;60m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 5:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;237;90;56m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 6:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;215;51;12m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 7:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;236;204;113m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 8:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;234;196;88m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 9:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;252;201;56m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 10:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;242;187;28m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+        case 11:
+            formatStart = "\x1B[38;5;16m\x1B[48;2;255;189;0m\x1B[1m";
+            formatEnd = "\x1B[22m\x1B[49m\x1B[39m";
+            break;
+
+
+
+
+
+        case -1: //default
+            formatStart = "";
+            formatEnd = "";
+            break;
+        case -2: //GRID
+            // FG: #988E8E
+            formatStart = "\x1B[48;5;237m";
+            formatEnd = "\x1B[49m";
+            break;
+        case -3: //OVER_2046
+            formatStart = "\x1B[38;5;16m\x1B[48;5;231m";
+            formatEnd = "\x1B[7m\x1B[49m\x1B[39m";;
+            break;
+        case -100: //test
+            formatStart="\x1B[38;5;160m\x1B[48;5;78m\x1B[3m\x1B[9m";
+            formatEnd = "\x1B[29m\x1B[23m\x1B[49m\x1B[39m";
+            break;
+        default:
+            formatStart = "";
+            formatEnd = "";
+            break;
     }
     printf("%s%s%s",formatStart,pixel.value,formatEnd);
 }
 int getXOffsetRightOfPanel(Panel panel){
-    return panel.offset_x + panel.component.width;
+    return panel.offset_x + panel.component -> width;
 }
 int getYOffsetDownPanel(Panel panel){
-    return panel.offset_y + panel.component.height;
+    return panel.offset_y + panel.component -> height;
 }
 void printScreen(Screen screen){
     for(int k = 0; k< screen.n_panels; k++){
-        for (int i = 0; i < screen.panels[k].component.height; i++){
-            for(int j = 0; j < screen.panels[k].component.width; j++){
-                Pixel* p = &(screen.panels[k].component.pixels[i][j]);
+        int sas;
+        for (int i = 0; i < screen.panels[k].component -> height; i++){
+            int mas;
+            for(int j = 0; j < screen.panels[k].component -> width; j++){
+                Pixel* p = &(screen.panels[k].component -> pixels[i][j]);
                 renderPixel(*p, i + screen.panels[k].offset_y, j + screen.panels[k].offset_x);
             }
         }
     }
 }
+
 
 void render(Screen cur, Screen nxt){
     bool areDissimilar = false;
@@ -298,12 +281,14 @@ void render(Screen cur, Screen nxt){
         copyScreen(&cur, &nxt);
         clearScreen(&cur);
     }
-    for(int k = 0; k< nxt.n_panels; k++){
-        for (int i = 0; i < nxt.panels[k].component.height; i++){
-            for(int j = 0; j < nxt.panels[k].component.width; j++){
-                Pixel* p_cur = &(cur.panels[k].component.pixels[i][j]);
-                Pixel* p_nxt = &(nxt.panels[k].component.pixels[i][j]);
-                if(!strcmp(p_cur->value, p_nxt->value) || p_cur ->styleCode != p_nxt ->styleCode){
+    int i, j, k = 0;
+    for( k = 0; k< nxt.n_panels; k++){
+        for ( i = 0; i < nxt.panels[k].component -> height; i++){
+            for( j = 0; j < nxt.panels[k].component -> width; j++){
+                Pixel* p_cur = &(cur.panels[k].component -> pixels[i][j]);
+                Pixel* p_nxt = &(nxt.panels[k].component -> pixels[i][j]);
+                // if (k == 2 && i == )
+                if(strcmp(p_cur->value, p_nxt->value) || p_cur ->styleCode != p_nxt ->styleCode){
                     renderPixel(*p_nxt, i + nxt.panels[k].offset_y, j + nxt.panels[k].offset_x);
                 }
             }
@@ -314,55 +299,66 @@ void render(Screen cur, Screen nxt){
     }  
 }
 
-
-
-int main(){
-    BoardComponent bc1;
-    BoardComponent bc2;
-    BoardComponent bc3;
-    // Component cp;
-    
-    newBoardComponent(&bc1,2,3,7,15);
-    newBoardComponent(&bc2,2,4,7,15);
-    newBoardComponent(&bc3,1,1,7,15);
-    
-    Screen screen;
-    Screen neextScreen;
-    newScreen(&screen, 3);
-    newScreen(&neextScreen, 1);
-    screen.panels[0].component = bc1.component;
-    screen.panels[1].component = bc2.component;
-    screen.panels[2].component = bc3.component;
-
-    screen.panels[0].offset_x = 3;
-    screen.panels[0].offset_y = 3;
-
-    //todo funzione  int offset_after horizontally/ vertically (Panel panel, additional offset x, y)
-    screen.panels[1].offset_x = getXOffsetRightOfPanel(screen.panels[0]) +2;
-    screen.panels[1].offset_y = screen.panels[0].offset_y;
-
-    screen.panels[2].offset_x = screen.panels[0].offset_x;
-    screen.panels[2].offset_y = getYOffsetDownPanel(screen.panels[0]) +3;
-
-
-    copyScreen(&neextScreen, &screen);
-    clearScreen(&screen);
-    // printScreen(neextScreen);
-    render(screen, neextScreen);
-
-    // drawGameGrid(&bc1);
-    // drawGameGrid(&bc2);
-    // copyComponent(&(bc2.component), &(bc1.component));
-    // freeComponent(&(bc.component));
-    // printComponent(bc2.component);
-    // Pixel pixel1;
-    // pixel1.value = " ";
-    // pixel1.styleCode = 0;
-    // // renderPixel(pixel1, 1,1);
-    // // pixel1.value = "ciao";
-    // char*        formatStart;
-    // char*    formatEnd;
-    // formatStart = "\x1B[48;5;231m";
-    // formatEnd = "\x1B[49m";
-    // printf("%s%s%s",formatStart,pixel1.value,formatEnd);
+int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y){
+    if(i < 0 || j < 0 || i > bc.n_cols || j > bc.n_rows){
+        return -1;
+    }
+    *x = (bc.cell_width + 1)*j + 1;
+    *y = (bc.cell_height + 1)*i + 1;
+    return 0;
 }
+
+int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWidth) {
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fp = fopen(fileName, "r");
+    if (fp == NULL)
+        return -1;
+    int i= 0;
+    int j = 0;
+    while ((read = getline(&line, &len, fp)) != -1) {
+        char* delimiter = ".";
+        char* token = strtok(line,delimiter);
+        j = 0;
+        while (token != NULL) {
+            if (i > cellHeight || j > cellWidth) {
+                fclose(fp);
+                if (line)
+                    free(line);
+                return -1;
+            }
+            strcpy(cell->pixels[i][j].value, token);
+            token = strtok(NULL, delimiter);
+            j++;
+        }
+        i++;
+    }
+    fclose(fp);
+    if (line)
+        free(line);
+    if (i != cellHeight || j != cellWidth) {
+        return -1;
+    }
+    return 0;
+}
+
+int copySubComponentInComponent(Component subComponent, Component* component, int offsetX, int offsetY) {
+    if (subComponent.width + offsetX >= component->width || subComponent.height + offsetY >= component->height)
+        return -1;
+    for (int i = 0; i< subComponent.height; i++) {
+        for (int j = 0; j < subComponent.width; j++) {
+            strcpy(component->pixels[i + offsetY][j + offsetX].value, subComponent.pixels[i][j].value);
+            component->pixels[i + offsetY][j + offsetX].styleCode = subComponent.pixels[i][j].styleCode;
+        }
+    }
+    return  0;
+}
+
+
+
+// int main(){
+
+// }

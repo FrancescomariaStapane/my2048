@@ -4,9 +4,10 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
-#include "2048game.h"
+#include "game.h"
 //#define state->n_rows 4
 //#define state->n_cols 4
+
 
 
 
