@@ -43,18 +43,21 @@ void init_game(board_state* state){
 	}
 	fill_new_square(state);
 	fill_new_square(state);
+	state->maxTile=2;
+	state->score=0;
 }
 
 
 void print_state(board_state state){
+	FILE* out_file = stderr;
 	for(int i=0; i<state.n_rows; i++){
 		for(int j=0; j<state.n_cols; j++){
 			int value = state.values[i][j];
-			printf("%d ", value ? 1 << value : 0);
+			fprintf(out_file,"%d ", value ? 1 << value : 0);
 		}
-		printf("\n");
+		fprintf(out_file,"\n");
 	}
-
+	fprintf(out_file,"score.txt: %ld\nmax tile:%d",state.score,state.maxTile);
 }
 
 /*void get_rand_square(int* position, int n_rows, int n_cols){
@@ -95,14 +98,14 @@ void crunch_board(board_state* state, char move){
 		orientation = -1;
 	}
 	if (move == 'r' || move == 'l'){ //horizontal
-		int* row_copy=(int *)malloc(state->n_cols *sizeof(int));							 
+		int* row_copy=(int *)malloc(state->n_cols *sizeof(int));
 		for (int i=0; i< state->n_rows; i++){
 			int start = orientation < 0 ? state->n_cols -1 : 0;
-			int end = orientation < 0 ? 0 : state->n_cols -1;
+			// int end = orientation < 0 ? 0 : state->n_cols -1;
 			for(int j = start, k=0; k<state->n_cols; j+=orientation, k++){
 				row_copy[k]=state->values[i][j];
 			}
-			crunch_line(row_copy, state->n_cols);
+			crunch_line(row_copy, state->n_cols, state);
 			for(int j = start, k=0; k<state->n_cols; j+=orientation, k++){
 				state->values[i][j]=row_copy[k];
 			}
@@ -111,15 +114,15 @@ void crunch_board(board_state* state, char move){
 		free(row_copy);
 	}
 	else{ //vertical
-		int* column_copy=malloc(state->n_rows*sizeof(int));							 
+		int* column_copy=malloc(state->n_rows*sizeof(int));
 		for (int j=0; j< state->n_cols; j++){
 			int start = orientation < 0 ? state->n_rows -1 : 0;
-			int end = orientation < 0 ? 0 : state->n_rows -1;
+			// int end = orientation < 0 ? 0 : state->n_rows -1;
 			for(int i = start, k=0; k<state->n_rows; i+=orientation, k++){
 				column_copy[k]=state->values[i][j];
 			
 			}
-			crunch_line(column_copy,state->n_rows);
+			crunch_line(column_copy,state->n_rows, state);
 			for(int i = start, k=0; k<state->n_rows; i+=orientation, k++){
 				state->values[i][j]=column_copy[k];
 					
@@ -134,7 +137,7 @@ int get_new_tile_value(){
 	//return 2 with p = 0.9 and 4 with p = 0.1
 	return rand()%10 == 0 ? 2 : 1;
 }
-void crunch_line(int* line, int len){
+void crunch_line(int* line, int len, board_state* state){
 	//il wall rappresenta la tile su cui va a sbattere la tile successiva non nulla durante il crunch
 	//generalmente wall è non 0, ma lo è se è avvenuto un raddoppio, nella cella che è sparita
 	int wall = 0;
@@ -146,7 +149,12 @@ void crunch_line(int* line, int len){
 		if(line[i]==line[wall]){
 			line[wall]+=1;
 			line[i]=0;
+			int new_tile = 1<<line[wall];
 			wall++;
+			state -> score += new_tile;
+			if (new_tile > state -> maxTile) {
+				state -> maxTile = new_tile;
+			}
 			continue;
 		}
 		if(line[wall]!=0){
@@ -157,7 +165,7 @@ void crunch_line(int* line, int len){
 			line[i]=0;
 			}	
 		}
-	printf("\n");
+	// printf("\n");
 }
 
 int fill_new_square(board_state* state){
@@ -209,6 +217,8 @@ bool are_boards_equal(board_state s1, board_state s2){
 }
 void copy_board_state(board_state *src, board_state* dst){
 	memcpy(dst->v, src->v, src->n_cols*src->n_rows * sizeof(int));
+	dst->maxTile = src->maxTile;
+	dst->score = src->score;
 }
 
 bool check_game_over(board_state state){

@@ -300,7 +300,7 @@ void render(Screen cur, Screen nxt){
 }
 
 int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y){
-    if(i < 0 || j < 0 || i > bc.n_cols || j > bc.n_rows){
+    if(i < 0 || j < 0 || i > bc.n_rows || j > bc.n_cols){
         return -1;
     }
     *x = (bc.cell_width + 1)*j + 1;

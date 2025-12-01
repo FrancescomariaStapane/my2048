@@ -81,10 +81,9 @@ void test(){
 }
 
 void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
-	char* folderName = "resources/pipeSeriff";
 	int x = 0;
 	int y = 0;
-	char* workingDir = "/home/franc/Desktop/2048"; // todo da cambiare
+	char* workingDir = "."; // todo da cambiare
 	char* fontDir = "/resources/pipeSeriff/";
 	char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 	sprintf(fileName, "%s%s%d.txt",workingDir,fontDir,value);
@@ -94,9 +93,9 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	if (readCellFromFile(fileName, &tmpCmp,bc->cell_height, bc->cell_width) < 0) {
 		exit_loop = 1;
 	}
-	for (int i = 0; i< tmpCmp.height; i++) {
-		for (int j = 0; j < tmpCmp.width; j++) {
-			tmpCmp.pixels[i][j].styleCode = value < 12 ? value : getStyleCode(OVER_4096);
+	for (int i_ = 0; i_< tmpCmp.height; i_++) {
+		for (int j_ = 0; j_ < tmpCmp.width; j_++) {
+			tmpCmp.pixels[i_][j_].styleCode = value < 12 ? value : getStyleCode(OVER_4096);
 		}
 	}
 
@@ -106,6 +105,10 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	freeComponent(&tmpCmp);
 }
 
+
+void updateScoreBoard(BoardComponent* sc, board_state state, BoardComponent scoreRectangle, BoardComponent* digits) {
+
+}
 
 void setUpScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
 	int horizontalDistance = 3;
@@ -198,6 +201,7 @@ int main(int argc, char** argv){
             }
 			if(input!='0'){
                 game_over = step(&cur_state, input, &prev_state, &undos);
+
 				for (int i = 0; i < n_rows; i++) {
 					for (int j = 0; j < n_cols; j++) {
 						updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
@@ -205,11 +209,11 @@ int main(int argc, char** argv){
 				}
 				render(screen, nextScreen);
 				copyScreen(&screen, &nextScreen);
+
                 // print_state(cur_state);
-                // printf("\n")
+                // fprintf(stderr,"\n");
                 req.tv_nsec = 0.1 * 100000000; // 0.01 seconds
                 nanosleep(&req, &rem);
-
             }
 
 		}while(!game_over && !exit_loop);

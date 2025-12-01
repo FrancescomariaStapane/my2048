@@ -7,6 +7,8 @@ typedef struct Board_State{
 	//int values[state->n_cols][state->n_rows];
 	int ** values;
 	int n_rows, n_cols;
+	long score;
+	int maxTile;
 }board_state;
 
 // int undos = 2;
@@ -15,7 +17,7 @@ void print_state(board_state state);
 //void get_rand_square(int* position);
 void get_rand_empty_square(board_state state, int* position);
 void crunch_board(board_state* state, char move);
-void crunch_line(int* line, int len);
+void crunch_line(int* line, int len, board_state* state);
 int get_new_tile_value();
 int step(board_state* state, char move, board_state* prev_state, int *undos);
 int fill_new_square(board_state* state);
