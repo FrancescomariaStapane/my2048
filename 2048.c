@@ -11,12 +11,14 @@
 #include<stdlib.h>
 #include<termios.h>
 #include<unistd.h>
-
+#include <sys/ioctl.h>
 
 static int exit_loop = 0;
 void signal_handler(){
     exit_loop = 1;
 }
+
+
 
 void test(){
 	// Component* component = malloc(10*sizeof(Component));
@@ -29,6 +31,7 @@ void test(){
  //
 	// while (1){}
 }
+
 
 void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	int x = 0;
@@ -73,7 +76,7 @@ void updateScoreBoard(BoardComponent* sc, board_state curState, board_state prev
 
 void updateInfoBoard(BoardComponent* ic, Component infoText) {
 	loadInfo(&infoText);
-	copySubComponentInComponent(infoText, &ic->component, 1,1);
+	copySubComponentInComponent(infoText, &ic->component, 2,1);
 }
 
 void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
@@ -97,8 +100,8 @@ void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	drawGameGrid(gameBoard);
 	drawGameGrid(scoreBoard);
 	drawGameGrid(infoBoard);
-	copyScreen(screen, nextScreen);
-	clearScreen(screen);
+	// copyScreen(screen, nextScreen);
+	// clearScreen(screen);
 }
 
 
@@ -123,14 +126,26 @@ int undos = 2;
 BoardComponent gameBoard;
 BoardComponent scoreBoard;
 BoardComponent infoBoard;
+struct winsize sz;
+
+void redrawScreen() {
+	printf("\e[2J");
+	copyScreen(&screen, &nextScreen);
+	clearScreen(&screen);
+	render(screen, nextScreen);
+}
 
 int main(int argc, char** argv){
     configure_terminal();
     signal(SIGINT, signal_handler);
-
+	signal( SIGWINCH, redrawScreen );
+	int max_n_cols = 10;
+	int max_n_rows = 5;
 	if(argc == 3){
 		n_cols = atoi(argv[1]);
 		n_rows =atoi(argv[2]);
+		n_cols = n_cols > max_n_cols ? max_n_cols : n_cols;
+		n_rows = n_rows > max_n_rows ? max_n_rows : n_rows;
 	}else{
         n_cols = 4;
         n_rows = 4;
@@ -148,7 +163,7 @@ int main(int argc, char** argv){
 	for (int i=0; i < 10; i++)
 		newComponent(&digitsComponents[i],3,3);
     newComponent(&scoreText,3,16);
-    newComponent(&infoText,7,85);
+    newComponent(&infoText,7,68);
 
 	load_digits(&scoreText, digitsComponents);
 	newScreen(&screen, 3);
@@ -168,14 +183,16 @@ int main(int argc, char** argv){
 		}
 		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 		updateInfoBoard(&infoBoard, infoText);
+		redrawScreen();
 		render(screen, nextScreen);
-
+		game_over = 0;
 		// print_state(cur_state);
 		do{
 			input = read_input();
             if(input=='s'){
                 break;
             }
+
 			if(input!='0'){
                 game_over = step(&cur_state, input, &prev_state, &undos);
 
@@ -184,6 +201,9 @@ int main(int argc, char** argv){
 						updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
 					}
 				}
+				// drawGameGrid(&gameBoard);
+				// drawGameGrid(&scoreBoard);
+				// drawGameGrid(&infoBoard);
 				updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 				updateInfoBoard(&infoBoard, infoText);
 				render(screen, nextScreen);

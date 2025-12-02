@@ -129,7 +129,7 @@ void clearScreen(Screen* screen){
      for(int i = 0; i < screen -> n_panels; i++){
         int n_pixels = screen -> panels[i].component -> height * screen -> panels[i].component -> width;
         for (int j = 0; j < n_pixels; j++){
-            strcpy(screen -> panels[i].component -> pixels_s[j].value ,"");
+            strcpy(screen -> panels[i].component -> pixels_s[j].value ," ");
             screen -> panels[i].component -> pixels_s[j].styleCode = getStyleCode(DEFAULT);
         }
     }
@@ -360,7 +360,7 @@ int loadInfo(Component* ic) {
     sprintf(fileName, "%s%sinfo.txt",workingDir,fontDir);
     readCellFromFile(fileName, ic, ic->height, ic->width);
     free(fileName);
-
+    return 0;
 }
 int load_digits(Component* scoreText, Component* digits) {
     char* workingDir = "."; // todo da cambiare
