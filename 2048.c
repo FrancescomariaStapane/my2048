@@ -71,6 +71,11 @@ void updateScoreBoard(BoardComponent* sc, board_state curState, board_state prev
 	}
 }
 
+void updateInfoBoard(BoardComponent* ic, Component infoText) {
+	loadInfo(&infoText);
+	copySubComponentInComponent(infoText, &ic->component, 1,1);
+}
+
 void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
 	int horizontalDistance = 3;
 	int verticalDistance = 2;
@@ -106,6 +111,7 @@ board_state prev_state;
 Component digitsComponents[10];
 int numberDecomposition[16];
 Component scoreText;
+Component infoText;
 Component scoreNumber;
 Screen screen;
 Screen nextScreen;
@@ -142,9 +148,9 @@ int main(int argc, char** argv){
 	for (int i=0; i < 10; i++)
 		newComponent(&digitsComponents[i],3,3);
     newComponent(&scoreText,3,16);
+    newComponent(&infoText,7,85);
 
 	load_digits(&scoreText, digitsComponents);
-
 	newScreen(&screen, 3);
 	newScreen(&nextScreen, 3);
 
@@ -161,7 +167,7 @@ int main(int argc, char** argv){
 			}
 		}
 		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
-
+		updateInfoBoard(&infoBoard, infoText);
 		render(screen, nextScreen);
 
 		// print_state(cur_state);
@@ -179,6 +185,7 @@ int main(int argc, char** argv){
 					}
 				}
 				updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
+				updateInfoBoard(&infoBoard, infoText);
 				render(screen, nextScreen);
 				copyScreen(&screen, &nextScreen);
 

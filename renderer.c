@@ -321,7 +321,7 @@ int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWi
     int i= 0;
     int j = 0;
     while ((read = getline(&line, &len, fp)) != -1) {
-        char* delimiter = ".";
+        char* delimiter = "|";
         char* token = strtok(line,delimiter);
         j = 0;
         while (token != NULL) {
@@ -352,7 +352,16 @@ void styleAllInComponent(Component* component, int styleCode) {
         }
     }
 }
+int loadInfo(Component* ic) {
+    char* workingDir = "."; // todo da cambiare
+    char* fontDir = "/resources/info/";
+    char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 
+    sprintf(fileName, "%s%sinfo.txt",workingDir,fontDir);
+    readCellFromFile(fileName, ic, ic->height, ic->width);
+    free(fileName);
+
+}
 int load_digits(Component* scoreText, Component* digits) {
     char* workingDir = "."; // todo da cambiare
     char* fontDir = "/resources/score/";

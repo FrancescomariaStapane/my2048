@@ -90,6 +90,6 @@ int load_digits(Component* scoreText, Component* digits);
 void styleAllInComponent(Component* component, int styleCode);
 int getXOffsetToCenterComponent(int outerWidth, int innerWidth);
 void decomposeNumber(int number, int* n_digits, int* array);
-
+int loadInfo(Component* ic);
 
 #endif
