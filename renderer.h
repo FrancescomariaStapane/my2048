@@ -86,5 +86,10 @@ int getYOffsetDownPanel(Panel panel);
 int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y);
 int readCellFromFile(char* file, Component* cell, int cellHeight, int cellWidth );
 int copySubComponentInComponent(Component subComponent, Component* component, int offsetX, int offsetY);
+int load_digits(Component* scoreText, Component* digits);
+void styleAllInComponent(Component* component, int styleCode);
+int getXOffsetToCenterComponent(int outerWidth, int innerWidth);
+void decomposeNumber(int number, int* n_digits, int* array);
+
 
 #endif

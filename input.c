@@ -1,11 +1,10 @@
-#include<termio.h>
+#include<termios.h>
 #include<stdio.h>
 #include<unistd.h>
 #include<time.h>
 #include<string.h>
 #include<signal.h>
 #include<stdlib.h>
-// #include<curses.h>
 
 
 static     struct termios old_termios, new_termios;

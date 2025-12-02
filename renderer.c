@@ -18,6 +18,7 @@ int newComponent(Component * component, int height, int width){
     for(int i = 0; i< component->height; i++){
         component->pixels[i] = &(component-> pixels_s[i*component->width]);
     }
+    return 0;
 }
 
 void copyComponent(Component* dst, Component* src){
@@ -177,8 +178,8 @@ void printStyledPixel(Pixel pixel){
     // printf("%d",pixel.styleCode);
     switch (pixel.styleCode){
         case 0:
-            formatStart = "\x1B[48;5;247m";
-            formatEnd = "\x1B[49m";
+            formatStart = "\x1B[38;5;16m\x1B[48;5;247m";
+            formatEnd = "\x1B[39m\x1B[49m";
             break;
         case 1:
             formatStart = "\x1B[38;5;16m\x1B[48;5;231m\x1B[1m";
@@ -344,7 +345,32 @@ int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWi
     }
     return 0;
 }
+void styleAllInComponent(Component* component, int styleCode) {
+    for (int i_ = 0; i_< component->height; i_++) {
+        for (int j_ = 0; j_ < component->width; j_++) {
+            component->pixels[i_][j_].styleCode = styleCode;
+        }
+    }
+}
 
+int load_digits(Component* scoreText, Component* digits) {
+    char* workingDir = "."; // todo da cambiare
+    char* fontDir = "/resources/score/";
+    char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
+    for (int i = 0; i< 10; i++) {
+        sprintf(fileName, "%s%s%d.txt",workingDir,fontDir,i);
+        newComponent(digits + i,digits[i].height,digits[i].width);
+        readCellFromFile(fileName, &digits[i], 3, 3);
+    }
+    sprintf(fileName, "%s%sscore.txt",workingDir,fontDir);
+    readCellFromFile(fileName, scoreText, scoreText->height, scoreText->width);
+    for (int i = 0; i< 10; i++)
+        styleAllInComponent(&digits[i], 0);
+    styleAllInComponent(scoreText, 0);
+
+    free(fileName);
+    return 0;
+}
 int copySubComponentInComponent(Component subComponent, Component* component, int offsetX, int offsetY) {
     if (subComponent.width + offsetX >= component->width || subComponent.height + offsetY >= component->height)
         return -1;
@@ -356,7 +382,19 @@ int copySubComponentInComponent(Component subComponent, Component* component, in
     }
     return  0;
 }
+int getXOffsetToCenterComponent(int outerWidth, int innerWidth) {
+    return (outerWidth -innerWidth)/2;
+}
 
+void decomposeNumber(int number, int* n_digits, int* array) {
+    int i = 0;
+    while (number > 0) {
+        array[i] = number % 10;
+        number /= 10;
+        i++;
+    }
+    *n_digits = i;
+}
 
 
 // int main(){

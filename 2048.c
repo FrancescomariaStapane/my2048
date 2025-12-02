@@ -19,65 +19,15 @@ void signal_handler(){
 }
 
 void test(){
-	BoardComponent bc1;
-    BoardComponent bc2;
-    BoardComponent bc3;
-    // Component cp;
-    
-    newBoardComponent(&bc1,1,1,7,15);
-    newBoardComponent(&bc2,1,1,7,15);
-    newBoardComponent(&bc3,4,4,7,15);
-    
-    Screen screen;
-    Screen neextScreen;
-    newScreen(&screen, 3);
-    newScreen(&neextScreen, 1);
-    screen.panels[0].component = &bc1.component;
-    screen.panels[1].component = &bc2.component;
-    screen.panels[2].component = &bc3.component;
-
-    screen.panels[0].offset_x = 3;
-    screen.panels[0].offset_y = 3;
-
-    //todo funzione  int offset_after horizontally/ vertically (Panel panel, additional offset x, y)
-    screen.panels[1].offset_x = getXOffsetRightOfPanel(screen.panels[0]) +2;
-    screen.panels[1].offset_y = screen.panels[0].offset_y;
-    screen.panels[2].offset_x = screen.panels[0].offset_x;
-    screen.panels[2].offset_y = getYOffsetDownPanel(screen.panels[0]) +3;
-
-
-    copyScreen(&neextScreen, &screen);
-    clearScreen(&screen);
-	// printScreen((screen));
-    render(screen, neextScreen);
-    copyScreen(&screen, &neextScreen);
-    int x = 0;
-	int y = 0;
-    // strcpy(board->component.pixels[i][j].value,"█");
-	Component tmpCmp;
-	newComponent(&tmpCmp, bc3.cell_height, bc3.cell_width);
-	readCellFromFile("resources/pipeSeriff/5.txt", &tmpCmp,bc3.cell_height, bc3.cell_width);
-	for (int i = 0; i< tmpCmp.height; i++) {
-		for (int j = 0; j < tmpCmp.width; j++) {
-			tmpCmp.pixels[i][j].styleCode = (i+j) % 2 ? 10 : 11;
-		}
-	}
-	for (int i = 0; i< bc3.n_rows; i++) {
-		for (int j = 0; j < bc3.n_cols; j++) {
-			int x = 0;
-			int y = 0;
-			getPosOfBoardComponentCell(bc3,i,j, &x, &y);
-			copySubComponentInComponent(tmpCmp, neextScreen.panels[2].component,x,y);
-
-		}
-	}
-	freeComponent(&tmpCmp);
-
-    // printScreen(neextScreen);
-
-    sleep(1);
-    render(screen,neextScreen);
-
+	// Component* component = malloc(10*sizeof(Component));
+	// load_digits(component);
+	// for (int i = 0; i< 10; i++) {
+ //        sleep(1);
+	// 	printComponent(component[i]);
+	// 	// printf("\n");
+	// }
+ //
+	// while (1){}
 }
 
 void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
@@ -93,24 +43,35 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	if (readCellFromFile(fileName, &tmpCmp,bc->cell_height, bc->cell_width) < 0) {
 		exit_loop = 1;
 	}
-	for (int i_ = 0; i_< tmpCmp.height; i_++) {
-		for (int j_ = 0; j_ < tmpCmp.width; j_++) {
-			tmpCmp.pixels[i_][j_].styleCode = value < 12 ? value : getStyleCode(OVER_4096);
-		}
-	}
-
+	// for (int i_ = 0; i_< tmpCmp.height; i_++) {
+	// 	for (int j_ = 0; j_ < tmpCmp.width; j_++) {
+	// 		tmpCmp.pixels[i_][j_].styleCode = value < 12 ? value : getStyleCode(OVER_4096);
+	// 	}
+	// }
+	styleAllInComponent(&tmpCmp, value < 12 ? value : getStyleCode(OVER_4096));
 	getPosOfBoardComponentCell(*bc,i,j, &x, &y);
 	copySubComponentInComponent(tmpCmp, &bc->component,x,y);
-
+	free(fileName);
 	freeComponent(&tmpCmp);
 }
 
 
-void updateScoreBoard(BoardComponent* sc, board_state state, BoardComponent scoreRectangle, BoardComponent* digits) {
+void updateScoreBoard(BoardComponent* sc, board_state curState, board_state prevState, Component* digits, Component scoreText, int* numberDecomposition) {
+	int topOffsetY = 2;
+	copySubComponentInComponent(scoreText, &sc->component, getXOffsetToCenterComponent(sc->component.width, scoreText.width), topOffsetY);
 
+	if (curState.score != prevState.score) {
+		int n_digits;
+		decomposeNumber(curState.score, &n_digits, numberDecomposition);
+		int scoreOffsetY = topOffsetY + scoreText.height + 1;
+		int scoreOffsetX = getXOffsetToCenterComponent(sc->component.width,3*n_digits);
+		for (int i = n_digits -1; i >=0; i--) {
+			copySubComponentInComponent(digits[numberDecomposition[i]],&sc->component, scoreOffsetX + 3*(n_digits-i-1), scoreOffsetY);
+		}
+	}
 }
 
-void setUpScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
+void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
 	int horizontalDistance = 3;
 	int verticalDistance = 2;
 	newBoardComponent(gameBoard,n_rows, n_cols, 7, 15);
@@ -122,7 +83,7 @@ void setUpScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	nextScreen->panels[2].offset_x = horizontalDistance ;
 	nextScreen->panels[2].offset_y = getYOffsetDownPanel(nextScreen->panels[0]) + verticalDistance ;
 
-	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 30);
+	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 36);
 	nextScreen->panels[1].component = &scoreBoard->component;
 
 	newBoardComponent(infoBoard,1,1, 7,  nextScreen->panels[1].component->width + nextScreen->panels[1].offset_x - 5);
@@ -131,7 +92,6 @@ void setUpScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	drawGameGrid(gameBoard);
 	drawGameGrid(scoreBoard);
 	drawGameGrid(infoBoard);
-
 	copyScreen(screen, nextScreen);
 	clearScreen(screen);
 }
@@ -139,12 +99,29 @@ void setUpScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 
 
 
+int n_rows, n_cols;
+int seed;
+board_state cur_state;
+board_state prev_state;
+Component digitsComponents[10];
+int numberDecomposition[16];
+Component scoreText;
+Component scoreNumber;
+Screen screen;
+Screen nextScreen;
+struct  timespec req ={};
+struct  timespec rem ={};
+int game_over = 0;
+char input;
+int undos = 2;
+BoardComponent gameBoard;
+BoardComponent scoreBoard;
+BoardComponent infoBoard;
 
 int main(int argc, char** argv){
     configure_terminal();
+    signal(SIGINT, signal_handler);
 
-
-	int n_rows, n_cols;
 	if(argc == 3){
 		n_cols = atoi(argv[1]);
 		n_rows =atoi(argv[2]);
@@ -152,50 +129,44 @@ int main(int argc, char** argv){
         n_cols = 4;
         n_rows = 4;
     }
-	int seed=time(NULL);
+	seed=time(NULL);
 	srand(seed);
-	board_state cur_state;
-	board_state prev_state;
+
+
 	if(new_board_state(&cur_state, n_rows, n_cols) || new_board_state(&prev_state, n_rows, n_cols)){
 		printf("could not instantiate game\n");
 		return -1;
 	}
 
+	//digits are used to display score in score component
+	for (int i=0; i < 10; i++)
+		newComponent(&digitsComponents[i],3,3);
+    newComponent(&scoreText,3,16);
 
-	Screen screen;
-	Screen nextScreen;
+	load_digits(&scoreText, digitsComponents);
+
 	newScreen(&screen, 3);
 	newScreen(&nextScreen, 3);
-
-	BoardComponent gameBoard;
-	BoardComponent scoreBoard;
-	BoardComponent infoBoard;
-
-    int undos = 2;
-
-    signal(SIGINT, signal_handler);
-
-    struct  timespec req ={};
-    struct  timespec rem ={};
 
 	// test();
 	// while(!exit_loop){sleep(1);}
 
 	while(!exit_loop){
-		int game_over = 0;
         // printf("NEW GAME\n\n");
 		init_game(&cur_state);
-		setUpScreen(&screen, &nextScreen, &gameBoard, &scoreBoard, &infoBoard, n_rows, n_cols);
+		setupScreen(&screen, &nextScreen, &gameBoard, &scoreBoard, &infoBoard, n_rows, n_cols);
 		for (int i = 0; i < n_rows; i++) {
 			for (int j = 0; j < n_cols; j++) {
 				updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
 			}
 		}
+		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
+
 		render(screen, nextScreen);
 
 		// print_state(cur_state);
 		do{
-			char input = read_input();
+			input = read_input();
             if(input=='s'){
                 break;
             }
@@ -207,6 +178,7 @@ int main(int argc, char** argv){
 						updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
 					}
 				}
+				updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 				render(screen, nextScreen);
 				copyScreen(&screen, &nextScreen);
 
@@ -219,6 +191,8 @@ int main(int argc, char** argv){
 		}while(!game_over && !exit_loop);
 
 	}
+	freeScreen(&screen);
+	freeScreen(&nextScreen);
 	free_board_state(&cur_state);
     free_board_state(&prev_state);
 }

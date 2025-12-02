@@ -43,7 +43,7 @@ void init_game(board_state* state){
 	}
 	fill_new_square(state);
 	fill_new_square(state);
-	state->maxTile=2;
+	// state->maxTile=2; // cancella prev_state->v ???
 	state->score=0;
 }
 

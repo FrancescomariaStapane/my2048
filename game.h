@@ -7,7 +7,7 @@ typedef struct Board_State{
 	//int values[state->n_cols][state->n_rows];
 	int ** values;
 	int n_rows, n_cols;
-	long score;
+	int score;
 	int maxTile;
 }board_state;
 
