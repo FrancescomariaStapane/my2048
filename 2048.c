@@ -59,7 +59,7 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 }
 
 
-void updateScoreBoard(BoardComponent* sc, board_state curState, board_state prevState, Component* digits, Component scoreText, int* numberDecomposition) {
+void updateScoreBoard(BoardComponent* sc, BoardState curState, BoardState prevState, Component* digits, Component scoreText, int* numberDecomposition) {
 	int topOffsetY = 2;
 	copySubComponentInComponent(scoreText, &sc->component, getXOffsetToCenterComponent(sc->component.width, scoreText.width), topOffsetY);
 
@@ -82,6 +82,7 @@ void updateInfoBoard(BoardComponent* ic, Component infoText) {
 void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
 	int horizontalDistance = 3;
 	int verticalDistance = 2;
+	freeBoardComponent(gameBoard);
 	newBoardComponent(gameBoard,n_rows, n_cols, 7, 15);
 	nextScreen->panels[0].component = &gameBoard->component;
 	nextScreen->panels[0].offset_x = horizontalDistance;
@@ -90,10 +91,10 @@ void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	nextScreen->panels[1].offset_y = verticalDistance ;
 	nextScreen->panels[2].offset_x = horizontalDistance ;
 	nextScreen->panels[2].offset_y = getYOffsetDownPanel(nextScreen->panels[0]) + verticalDistance ;
-
+	freeBoardComponent(scoreBoard);
 	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 36);
 	nextScreen->panels[1].component = &scoreBoard->component;
-
+	freeBoardComponent(infoBoard);
 	newBoardComponent(infoBoard,1,1, 7,  nextScreen->panels[1].component->width + nextScreen->panels[1].offset_x - 5);
 	nextScreen->panels[2].component = &infoBoard->component;
 
@@ -109,8 +110,8 @@ void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 
 int n_rows, n_cols;
 int seed;
-board_state cur_state;
-board_state prev_state;
+BoardState cur_state;
+BoardState prev_state;
 Component digitsComponents[10];
 int numberDecomposition[16];
 Component scoreText;

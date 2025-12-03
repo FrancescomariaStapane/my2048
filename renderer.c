@@ -7,6 +7,7 @@ int exit_no_memory(){
 }
 
 int newComponent(Component * component, int height, int width){
+    // component = malloc(sizeof(component));
     component -> height = height;
     component -> width = width;
     if(!((component->pixels_s = malloc(height * width * sizeof(Pixel)))))
@@ -22,8 +23,13 @@ int newComponent(Component * component, int height, int width){
 }
 
 void copyComponent(Component* dst, Component* src){
-    int src_size = src -> height * src -> width;
-    int dst_size = dst -> height * dst -> width;
+    int src_size, dst_size;
+    src_size = src -> height * src -> width;
+    if (dst != NULL) {
+        dst_size = dst -> height * dst -> width;
+    }else {
+        dst_size = 0;
+    }
 
     if(src_size != dst_size){
         freeComponent(dst);
@@ -39,8 +45,9 @@ void copyPanel(Panel* dst, Panel* src){
 }
 
 void copyScreen(Screen* dst, Screen* src){
-    if(dst -> n_panels != src -> n_panels){
-        freeScreen(dst);
+    if(!dst || dst -> n_panels != src -> n_panels){
+        if (dst)
+            freeScreen(dst);
         newScreen(dst, src->n_panels);
     }
     for (int i = 0; i < src->n_panels; i++){
@@ -85,13 +92,13 @@ void printComponent(Component component){
 }
 
 void freeComponent(Component* component){
-    if(!component){
+    if(component){
         free(component->pixels_s);
         free(component->pixels);
     }
 }
 void freeBoardComponent(BoardComponent* boardComponent){
-    if(!boardComponent){
+    if(boardComponent){
         free(boardComponent->component.pixels_s);
         free(boardComponent->component.pixels);
     }
@@ -135,7 +142,7 @@ void clearScreen(Screen* screen){
     }
 }
 void freeScreen(Screen* screen){
-    if(!screen){
+    if(screen){
         for(int i = 0; i < screen -> n_panels; i++){
             freeComponent((screen->panels[i].component));
         }
@@ -278,7 +285,7 @@ void render(Screen cur, Screen nxt){
     bool areDissimilar = false;
     if(areScreensDissimilar(cur, nxt)){
         areDissimilar = true;
-        newScreen(&cur,0);
+        // newScreen(&cur,0);
         copyScreen(&cur, &nxt);
         clearScreen(&cur);
     }
@@ -295,9 +302,9 @@ void render(Screen cur, Screen nxt){
             }
         }
     }
-    if(areDissimilar){
-        freeScreen(&cur);
-    }  
+    // if(areDissimilar){
+    //     freeScreen(&cur);
+    // }
 }
 
 int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y){
@@ -311,7 +318,8 @@ int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y){
 
 int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWidth) {
     FILE * fp;
-    char * line = NULL;
+    char line1 [512];
+    char* line = line1;
     size_t len = 0;
     ssize_t read;
 
@@ -322,7 +330,8 @@ int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWi
     int j = 0;
     while ((read = getline(&line, &len, fp)) != -1) {
         char* delimiter = "|";
-        char* token = strtok(line,delimiter);
+        // char* token = malloc(sizeof(char) * 128);
+        char * token = strtok(line,delimiter);
         j = 0;
         while (token != NULL) {
             if (i > cellHeight || j > cellWidth) {
@@ -335,6 +344,7 @@ int readCellFromFile(char* fileName, Component* cell, int cellHeight, int cellWi
             token = strtok(NULL, delimiter);
             j++;
         }
+        free(token);
         i++;
     }
     fclose(fp);
@@ -407,5 +417,13 @@ void decomposeNumber(int number, int* n_digits, int* array) {
 
 
 // int main(){
-
+//     printf("aaa\n");
+//     Component cp;
+//     newComponent(&cp, 1, 1);
+//     Screen sc;
+//     newScreen(&sc, 3);
+//     freeScreen(&sc);
+//     Pixel* pixel = malloc(2 * sizeof(Pixel));
+//     free(pixel);
+//     freeComponent(&cp);
 // }

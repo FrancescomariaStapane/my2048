@@ -14,7 +14,7 @@
 
 
 
-int new_board_state(board_state* state, int n_rows, int n_cols){
+int new_board_state(BoardState* state, int n_rows, int n_cols){
 	if((state->v = malloc(n_cols * n_rows * sizeof(int))) == NULL)
 		return -1;
 	if ((state->values = malloc(n_rows * sizeof(int*))) == NULL)
@@ -26,7 +26,7 @@ int new_board_state(board_state* state, int n_rows, int n_cols){
 	state->n_cols = n_cols;
 	return 0;
 }
-void free_board_state(board_state* state){
+void free_board_state(BoardState* state){
 	//for(int i = 0; i < state->n_rows; i++){
 	//	free(state->values[i]);
 	//}
@@ -34,7 +34,7 @@ void free_board_state(board_state* state){
 	free(state->v);
 
 }
-void init_game(board_state* state){
+void init_game(BoardState* state){
 	for(int i=0; i<state->n_rows; i++) {
 		for(int j=0; j<state->n_cols; j++){
 			state->values[i][j]=0;
@@ -48,7 +48,7 @@ void init_game(board_state* state){
 }
 
 
-void print_state(board_state state){
+void print_state(BoardState state){
 	FILE* out_file = stderr;
 	for(int i=0; i<state.n_rows; i++){
 		for(int j=0; j<state.n_cols; j++){
@@ -67,7 +67,7 @@ void print_state(board_state state){
 	position[1]=col;
 }*/
 
-void get_rand_empty_square(board_state state, int* position){
+void get_rand_empty_square(BoardState state, int* position){
 	//https://stackoverflow.com/questions/966108/choose-random-array-element-satisfying-certain-property
 	position[0]=-1;	
 	position[1]=-1;	
@@ -83,7 +83,7 @@ void get_rand_empty_square(board_state state, int* position){
 	}
 }
 
-void crunch_board(board_state* state, char move){
+void crunch_board(BoardState* state, char move){
 	int k=0;
 	//\. differntiate only horizontal or vertizal
 	//2. if horizontal iterate through rows, if vertical iterate through columns
@@ -137,7 +137,7 @@ int get_new_tile_value(){
 	//return 2 with p = 0.9 and 4 with p = 0.1
 	return rand()%10 == 0 ? 2 : 1;
 }
-void crunch_line(int* line, int len, board_state* state){
+void crunch_line(int* line, int len, BoardState* state){
 	//il wall rappresenta la tile su cui va a sbattere la tile successiva non nulla durante il crunch
 	//generalmente wall è non 0, ma lo è se è avvenuto un raddoppio, nella cella che è sparita
 	int wall = 0;
@@ -168,7 +168,7 @@ void crunch_line(int* line, int len, board_state* state){
 	// printf("\n");
 }
 
-int fill_new_square(board_state* state){
+int fill_new_square(BoardState* state){
 	int new_tile_pos[2];
 	get_rand_empty_square(*state, new_tile_pos);
 	if(new_tile_pos[0] < 0){
@@ -178,9 +178,9 @@ int fill_new_square(board_state* state){
 	return 0;
 }
 
-int step(board_state* state, char move, board_state* prev_state, int *undos){
+int step(BoardState* state, char move, BoardState* prev_state, int *undos){
 	bool is_new_move=true;
-	board_state tmp_state;
+	BoardState tmp_state;
 	new_board_state(&tmp_state, state->n_rows, state->n_cols);
 	copy_board_state(state, &tmp_state);
 	if(move == 'c'){
@@ -207,7 +207,7 @@ int step(board_state* state, char move, board_state* prev_state, int *undos){
 	free_board_state(&tmp_state);
 	return check_game_over(*state); // return check_game_over(state)
 }
-bool are_boards_equal(board_state s1, board_state s2){
+bool are_boards_equal(BoardState s1, BoardState s2){
 	for(int i = 0; i< s1.n_rows * s1.n_cols; i++){
 		if(s1.v[i]!=s2.v[i]){
 			return false;
@@ -215,13 +215,13 @@ bool are_boards_equal(board_state s1, board_state s2){
 	}
 	return true;
 }
-void copy_board_state(board_state *src, board_state* dst){
+void copy_board_state(BoardState *src, BoardState* dst){
 	memcpy(dst->v, src->v, src->n_cols*src->n_rows * sizeof(int));
 	dst->maxTile = src->maxTile;
 	dst->score = src->score;
 }
 
-bool check_game_over(board_state state){
+bool check_game_over(BoardState state){
 	for(int i = 0; i < state.n_rows; i++){
 		for( int j = 0; j < state.n_cols; j++){
 			if(state.values[i][j] == 0){

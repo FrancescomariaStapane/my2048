@@ -30,8 +30,8 @@ typedef struct BoardComponent{
     Component component;
     int cell_height;
     int cell_width;
-    int n_cell_rows;
-    int n_cell_cols;
+    // int n_cell_rows;
+    // int n_cell_cols;
     int n_rows;
     int n_cols;
 }BoardComponent;
@@ -51,7 +51,7 @@ typedef struct Screen{
 typedef struct GameState{
     Screen current;
     Screen prev;
-    board_state state;
+    BoardState state;
 }GameState;
 
 typedef enum STYLE{
