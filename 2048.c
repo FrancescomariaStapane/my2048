@@ -10,6 +10,7 @@
 #include<signal.h>
 #include<stdlib.h>
 #include<termios.h>
+#include "storage.h"
 #include<unistd.h>
 #include <sys/ioctl.h>
 
@@ -19,24 +20,38 @@ void signal_handler(){
 }
 
 
-
 void test(){
-	// Component* component = malloc(10*sizeof(Component));
-	// load_digits(component);
-	// for (int i = 0; i< 10; i++) {
- //        sleep(1);
-	// 	printComponent(component[i]);
-	// 	// printf("\n");
-	// }
- //
-	// while (1){}
+	BoardState state;
+	newBoardState(&state,2,3);
+	initGame(&state);
+	char buf[4096];
+	boardStateToStr(state,buf);
+	openDb();
+	UserState user;
+    char* stateStr = "3;2;5 4 3 2 1";
+	strcpy(user.username,"cesx");
+	user.state = state;
+	user.bestScore = 20;
+	user.bestTile = 5;
+	addUser(user);
+	user.bestScore = 123;
+	user.bestTile = 3;
+	updateBest(user);
+	strToBoardState(&user.state, stateStr);
+	updateBoardState(user);
+	getSavedBoardState(&user);
+	printState(user.state);
+	Leaderboard lb;
+	int rs = getLeaderBoard(&lb);
+	closeDb();
+	sleep(10);
 }
 
 
 void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	int x = 0;
 	int y = 0;
-	char* workingDir = "."; // todo da cambiare
+	char* workingDir = getWorkingDir();
 	char* fontDir = "/resources/pipeSeriff/";
 	char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 	sprintf(fileName, "%s%s%d.txt",workingDir,fontDir,value);
@@ -46,11 +61,6 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	if (readCellFromFile(fileName, &tmpCmp,bc->cell_height, bc->cell_width) < 0) {
 		exit_loop = 1;
 	}
-	// for (int i_ = 0; i_< tmpCmp.height; i_++) {
-	// 	for (int j_ = 0; j_ < tmpCmp.width; j_++) {
-	// 		tmpCmp.pixels[i_][j_].styleCode = value < 12 ? value : getStyleCode(OVER_4096);
-	// 	}
-	// }
 	styleAllInComponent(&tmpCmp, value < 12 ? value : getStyleCode(OVER_4096));
 	getPosOfBoardComponentCell(*bc,i,j, &x, &y);
 	copySubComponentInComponent(tmpCmp, &bc->component,x,y);
@@ -95,7 +105,7 @@ void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 36);
 	nextScreen->panels[1].component = &scoreBoard->component;
 	freeBoardComponent(infoBoard);
-	newBoardComponent(infoBoard,1,1, 7,  nextScreen->panels[1].component->width + nextScreen->panels[1].offset_x - 5);
+	newBoardComponent(infoBoard,1,1, 8,  nextScreen->panels[1].component->width + nextScreen->panels[1].offset_x - 5);
 	nextScreen->panels[2].component = &infoBoard->component;
 
 	drawGameGrid(gameBoard);
@@ -128,7 +138,15 @@ BoardComponent gameBoard;
 BoardComponent scoreBoard;
 BoardComponent infoBoard;
 struct winsize sz;
+char username[4096];
+Leaderboard lb;
+int rs;
+bool ranked = 1;
+UserState userState;
 
+void loadUsername(char* username_) {
+	strcpy(username_, "cesx"); //provvisorio
+}
 void redrawScreen() {
 	printf("\e[2J");
 	copyScreen(&screen, &nextScreen);
@@ -136,10 +154,13 @@ void redrawScreen() {
 	render(screen, nextScreen);
 }
 
-int main(int argc, char** argv){
-    configure_terminal();
-    signal(SIGINT, signal_handler);
-	signal( SIGWINCH, redrawScreen );
+int setUpSession(int argc, char** argv) {
+	configure_terminal();
+	signal(SIGINT, signal_handler);
+	signal(SIGHUP, signal_handler);
+	signal( SIGWINCH, redrawScreen);
+	loadUsername(username);
+	openDb();
 	int max_n_cols = 10;
 	int max_n_rows = 5;
 	if(argc == 3){
@@ -148,14 +169,16 @@ int main(int argc, char** argv){
 		n_cols = n_cols > max_n_cols ? max_n_cols : n_cols;
 		n_rows = n_rows > max_n_rows ? max_n_rows : n_rows;
 	}else{
-        n_cols = 4;
-        n_rows = 4;
-    }
+		n_cols = 4;
+		n_rows = 4;
+	}
+
+	ranked = n_cols == 4 && n_rows == 4; //only 4x4 grids are ranked games
 	seed=time(NULL);
 	srand(seed);
 
 
-	if(new_board_state(&cur_state, n_rows, n_cols) || new_board_state(&prev_state, n_rows, n_cols)){
+	if(newBoardState(&cur_state, n_rows, n_cols) || newBoardState(&prev_state, n_rows, n_cols)){
 		printf("could not instantiate game\n");
 		return -1;
 	}
@@ -163,20 +186,60 @@ int main(int argc, char** argv){
 	//digits are used to display score in score component
 	for (int i=0; i < 10; i++)
 		newComponent(&digitsComponents[i],3,3);
-    newComponent(&scoreText,3,16);
-    newComponent(&infoText,7,68);
+	newComponent(&scoreText,3,16);
+	newComponent(&infoText,8,68);
 
 	load_digits(&scoreText, digitsComponents);
 	newScreen(&screen, 3);
 	newScreen(&nextScreen, 3);
+	newBoardState(&userState.state, cur_state.n_rows, cur_state.n_cols);
+	strcpy(userState.username, username);
+	initGame(&cur_state);
+	if (ranked) {
+		bool userExists = false;
+		checkUserExists(username, &userExists);
+		if (userExists) {
+			getSavedBoardState(&userState);
+			copyBoardState(&userState.state, &cur_state);
+			copyBoardState(&userState.state, &prev_state);
+		}
+		else {
+			userState.bestScore=0;
+			userState.bestTile=2;
+			copyBoardState(&cur_state, &userState.state);
+			addUser(userState);
+		}
 
-	// test();
-	// while(!exit_loop){sleep(1);}
+	}else {
+		initGame(&cur_state);
+	}
+	return 0;
+}
 
-	while(!exit_loop){
-        // printf("NEW GAME\n\n");
-		init_game(&cur_state);
-		setupScreen(&screen, &nextScreen, &gameBoard, &scoreBoard, &infoBoard, n_rows, n_cols);
+void setUpGame() {
+	// initGame(&cur_state);
+	setupScreen(&screen, &nextScreen, &gameBoard, &scoreBoard, &infoBoard, n_rows, n_cols);
+	for (int i = 0; i < n_rows; i++) {
+		for (int j = 0; j < n_cols; j++) {
+			updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
+		}
+	}
+	updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
+	updateInfoBoard(&infoBoard, infoText);
+	redrawScreen();
+	render(screen, nextScreen);
+	game_over = 0;
+}
+
+int gameStep() {
+	input = read_input();
+	if(input=='s'){
+		return 1;
+	}
+
+	if(input!='0'){
+		game_over = step(&cur_state, input, &prev_state, &undos);
+
 		for (int i = 0; i < n_rows; i++) {
 			for (int j = 0; j < n_cols; j++) {
 				updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
@@ -184,44 +247,47 @@ int main(int argc, char** argv){
 		}
 		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 		updateInfoBoard(&infoBoard, infoText);
-		redrawScreen();
 		render(screen, nextScreen);
-		game_over = 0;
+		copyScreen(&screen, &nextScreen);
+
 		// print_state(cur_state);
-		do{
-			input = read_input();
-            if(input=='s'){
-                break;
-            }
+		// fprintf(stderr,"\n");
+		req.tv_nsec = 0.1 * 100000000; // 0.01 seconds
+		nanosleep(&req, &rem);
+	}
+	return 0;
+}
 
-			if(input!='0'){
-                game_over = step(&cur_state, input, &prev_state, &undos);
+void tearDown() {
 
-				for (int i = 0; i < n_rows; i++) {
-					for (int j = 0; j < n_cols; j++) {
-						updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
-					}
-				}
-				// drawGameGrid(&gameBoard);
-				// drawGameGrid(&scoreBoard);
-				// drawGameGrid(&infoBoard);
-				updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
-				updateInfoBoard(&infoBoard, infoText);
-				render(screen, nextScreen);
-				copyScreen(&screen, &nextScreen);
-
-                // print_state(cur_state);
-                // fprintf(stderr,"\n");
-                req.tv_nsec = 0.1 * 100000000; // 0.01 seconds
-                nanosleep(&req, &rem);
-            }
-
-		}while(!game_over && !exit_loop);
-
+	if (ranked) {
+		strcpy(userState.username, username);
+		copyBoardState( &cur_state, &userState.state);
+		updateBoardState(userState);
 	}
 	freeScreen(&screen);
 	freeScreen(&nextScreen);
-	free_board_state(&cur_state);
-    free_board_state(&prev_state);
+	freeBoardState(&cur_state);
+	freeBoardState(&prev_state);
+	closeDb();
+}
+int main(int argc, char** argv){
+    rs = setUpSession(argc, argv);
+	if (rs)
+		return rs;
+	// test();
+	while(!exit_loop){
+		setUpGame();
+		// tearDown();
+		do{
+			if (gameStep()) {
+				break;
+
+			}
+		}while(!game_over && !exit_loop);
+		if (!exit_loop)
+			initGame(&cur_state);
+	}
+	tearDown();
 }
 

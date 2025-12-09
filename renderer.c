@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include<unistd.h>
 
+
 int exit_no_memory(){
     printf("Insufficient memory for pixel matrix\n");
     exit(1);
@@ -363,17 +364,19 @@ void styleAllInComponent(Component* component, int styleCode) {
     }
 }
 int loadInfo(Component* ic) {
-    char* workingDir = "."; // todo da cambiare
+    char* workingDir = getWorkingDir();
     char* fontDir = "/resources/info/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 
     sprintf(fileName, "%s%sinfo.txt",workingDir,fontDir);
     readCellFromFile(fileName, ic, ic->height, ic->width);
+    styleAllInComponent(ic, 0);
+
     free(fileName);
     return 0;
 }
 int load_digits(Component* scoreText, Component* digits) {
-    char* workingDir = "."; // todo da cambiare
+    char* workingDir = getWorkingDir();
     char* fontDir = "/resources/score/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
     for (int i = 0; i< 10; i++) {
@@ -386,7 +389,6 @@ int load_digits(Component* scoreText, Component* digits) {
     for (int i = 0; i< 10; i++)
         styleAllInComponent(&digits[i], 0);
     styleAllInComponent(scoreText, 0);
-
     free(fileName);
     return 0;
 }
