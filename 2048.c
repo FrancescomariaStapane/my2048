@@ -212,7 +212,11 @@ void loadUsername(char* username_) {
 	struct passwd* pwd;
 	pwd = getpwuid(ruid);
 	strcpy(username_, pwd->pw_name);
-	// strcpy(username_, "sas5"); //provvisorio
+	openDb();
+	getLeaderBoard(&lb);
+	// closeDb();
+	sprintf(username_,"sass%d",lb.nOfUsers);
+	// strcpy(username_, "sas9"); //provvisorio
 }
 void redrawScreen() {
 	printf("\e[2J");
@@ -223,7 +227,7 @@ void redrawScreen() {
 
 void loadPersonalBest() {
 	bestScoreEver = 0;
-	bestTileEver = 0;
+	bestTileEver = 2;
 	bool userExists = false;
 	checkUserExists(username, &userExists);
 	if (userExists) {
@@ -254,8 +258,7 @@ int setUpSession(int argc, char** argv) {
 	}
 
 	ranked = n_cols == 4 && n_rows == 4; //only 4x4 grids are ranked games
-	seed=time(NULL);
-	srand(seed);
+
 
 
 	if(newBoardState(&cur_state, n_rows, n_cols) || newBoardState(&prev_state, n_rows, n_cols)){
@@ -267,7 +270,7 @@ int setUpSession(int argc, char** argv) {
 	for (int i=0; i < 10; i++)
 		newComponent(&digitsComponents[i],3,3);
 	newComponent(&scoreText,3,16);
-	newComponent(&infoText,8,68);
+	newComponent(&infoText,8,75);
 	loadDigits(&scoreText, digitsComponents);
 	// getLeaderBoard(&lb);
 	// updateLeaderboard(&scoreBoard,lb);
@@ -279,7 +282,6 @@ int setUpSession(int argc, char** argv) {
 	if (ranked) {
 		bool userExists = false;
 		checkUserExists(username, &userExists);
-		loadPersonalBest();
 		if (userExists) {
 			getSavedBoardState(&userState);
 			if (isStateValid(userState.state)) {
@@ -309,7 +311,7 @@ void setUpGame() {
 	}
 	updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 	updateInfoBoard(&infoBoard, infoText);
-
+	loadPersonalBest();
 	redrawScreen();
 	render(screen, nextScreen);
 	game_over = 0;
@@ -356,6 +358,8 @@ void tearDown() {
 }
 
 int main(int argc, char** argv){
+	seed=time(NULL);
+	srand(seed);
     rs = setUpSession(argc, argv);
 	if (rs)
 		return rs;
@@ -366,7 +370,6 @@ int main(int argc, char** argv){
 		do{
 			if (gameStep()) {
 				break;
-
 			}
 		}while(!game_over && !exit_loop);
 		if (ranked) {

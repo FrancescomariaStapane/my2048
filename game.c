@@ -46,6 +46,7 @@ void initGame(BoardState* state){
 
 	// state->maxTile=2; // cancella prev_state->v ???
 	state->score=0;
+	state->maxTile = 2;
 }
 
 void getWorkingDir(char* cwd) {

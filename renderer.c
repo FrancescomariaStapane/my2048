@@ -252,8 +252,8 @@ void printStyledPixel(Pixel pixel){
             formatEnd = "\x1B[49m";
             break;
         case -3: //OVER_2046
-            formatStart = "\x1B[38;5;16m\x1B[48;5;231m";
-            formatEnd = "\x1B[7m\x1B[49m\x1B[39m";;
+            formatStart = "\x1B[7m\x1B[38;5;16m\x1B[48;5;231m";
+            formatEnd = "\x1B[27m\x1B[49m\x1B[39m";;
             break;
         case -100: //test
             formatStart="\x1B[38;5;160m\x1B[48;5;78m\x1B[3m\x1B[9m";

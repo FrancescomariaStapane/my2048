@@ -68,7 +68,7 @@ int openDb() {
     char workingDir[4096];
     getWorkingDir(workingDir);
     char* dbFile = malloc(sizeof(char) * ( strlen(workingDir) + 16));
-    sprintf(dbFile, "%s",workingDir);
+    strcpy(dbFile,workingDir);
     strcat(dbFile,"/users.db");
     rc = sqlite3_open(dbFile, &db);
     free(dbFile);
@@ -100,7 +100,7 @@ int addUser(UserState user) {
     char* boardValues = malloc (sizeof(char)* 2 * user.state.n_cols * user.state.n_rows);
     boardStateToStr(user.state, boardValues);
     sprintf(sql, "INSERT INTO LEADERBOARD (NAME,BOARD_STATE,BEST_SCORE,BEST_TILE) "\
-        "VALUES ('%s', '%s', %d, %d); ", user.username, boardValues, user.bestScore, user.bestTile);
+        "VALUES ('%s', '%s', %d, %d); ", user.username, "4;4;0;2;0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0", user.bestScore, user.bestTile);
     rc = sqlite3_exec(db, sql, NULL, 0, &zErrMsg);
     if (rc != SQLITE_OK) {
         fprintf(stderr,("%s\n"),zErrMsg);
