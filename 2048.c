@@ -13,6 +13,7 @@
 #include "storage.h"
 #include<unistd.h>
 #include <sys/ioctl.h>
+#include <pwd.h>
 
 static int exit_loop = 0;
 void signal_handler(){
@@ -20,38 +21,24 @@ void signal_handler(){
 }
 
 
-void test(){
-	BoardState state;
-	newBoardState(&state,2,3);
-	initGame(&state);
-	char buf[4096];
-	boardStateToStr(state,buf);
-	openDb();
-	UserState user;
-    char* stateStr = "3;2;5 4 3 2 1";
-	strcpy(user.username,"cesx");
-	user.state = state;
-	user.bestScore = 20;
-	user.bestTile = 5;
-	addUser(user);
-	user.bestScore = 123;
-	user.bestTile = 3;
-	updateBest(user);
-	strToBoardState(&user.state, stateStr);
-	updateBoardState(user);
-	getSavedBoardState(&user);
-	printState(user.state);
-	Leaderboard lb;
-	int rs = getLeaderBoard(&lb);
-	closeDb();
-	sleep(10);
+void test() {
 }
+
+bool isStateValid(BoardState state) {
+	for (int i= 0; i < state.n_rows; i++)
+		for (int j = 0; j < state.n_cols; j++)
+			if (state.values[i][j]< 0 || state.values[i][j] > 24)
+				return false;
+	return true;
+}
+
 
 
 void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	int x = 0;
 	int y = 0;
-	char* workingDir = getWorkingDir();
+	char workingDir[4096];
+	getWorkingDir(workingDir);
 	char* fontDir = "/resources/pipeSeriff/";
 	char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 	sprintf(fileName, "%s%s%d.txt",workingDir,fontDir,value);
@@ -69,25 +56,13 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 }
 
 
-void updateScoreBoard(BoardComponent* sc, BoardState curState, BoardState prevState, Component* digits, Component scoreText, int* numberDecomposition) {
-	int topOffsetY = 2;
-	copySubComponentInComponent(scoreText, &sc->component, getXOffsetToCenterComponent(sc->component.width, scoreText.width), topOffsetY);
-
-	if (curState.score != prevState.score) {
-		int n_digits;
-		decomposeNumber(curState.score, &n_digits, numberDecomposition);
-		int scoreOffsetY = topOffsetY + scoreText.height + 1;
-		int scoreOffsetX = getXOffsetToCenterComponent(sc->component.width,3*n_digits);
-		for (int i = n_digits -1; i >=0; i--) {
-			copySubComponentInComponent(digits[numberDecomposition[i]],&sc->component, scoreOffsetX + 3*(n_digits-i-1), scoreOffsetY);
-		}
-	}
-}
 
 void updateInfoBoard(BoardComponent* ic, Component infoText) {
 	loadInfo(&infoText);
 	copySubComponentInComponent(infoText, &ic->component, 2,1);
 }
+
+
 
 void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard, BoardComponent* scoreBoard, BoardComponent* infoBoard, int n_rows, int n_cols) {
 	int horizontalDistance = 3;
@@ -143,15 +118,120 @@ Leaderboard lb;
 int rs;
 bool ranked = 1;
 UserState userState;
+int bestScoreEver;
+int bestTileEver;
+
+void updateLeaderboard(BoardComponent* sc, Leaderboard lb) {
+	int yOffsetHeading = 10;//to account for score display and padding
+	int yOffsetUsers = yOffsetHeading + 2;
+	int leaderBoardRows = sc->cell_height - yOffsetUsers -1;
+	int maxUsernameChars = 16;
+	int maxScoreChars = 7;
+	int xOffsetPos = 2;
+	int xOffsetUsername = xOffsetPos + 3;
+	int xOffsetScore = xOffsetUsername + maxUsernameChars + 1;
+	int xOffsetTile = xOffsetScore + maxScoreChars + 1;
+
+	printlineInComponent("#", &scoreBoard.component, 0, xOffsetPos, yOffsetHeading, maxUsernameChars);
+	printlineInComponent("Username", &scoreBoard.component, 0, xOffsetUsername, yOffsetHeading, maxUsernameChars);
+	printlineInComponent("Score", &scoreBoard.component, 0, xOffsetScore, yOffsetHeading, maxUsernameChars);
+	printlineInComponent("Tile", &scoreBoard.component, 0, xOffsetTile, yOffsetHeading, maxUsernameChars);
+
+	bool foundSelf = false;
+	int i;
+	char buf[16];
+	for (i = 0; i < lb.nOfUsers; i++) {
+		if (i >= leaderBoardRows - 1) {
+			break;
+		}
+		sprintf(buf,"%d", i+1);
+		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + i, maxUsernameChars);
+		printlineInComponent(lb.users[i].username, &sc->component, 0, xOffsetUsername, yOffsetUsers + i, maxUsernameChars);
+		sprintf(buf,"%d", lb.users[i].bestScore);
+		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + i, maxUsernameChars);
+		sprintf(buf,"%d", 1<<lb.users[i].bestTile);
+		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + i, maxUsernameChars);
+		if (!strcmp(lb.users[i].username, username)){
+			foundSelf = true;
+			for (int j = 0; j < sc->cell_width; j++) {
+				sc->component.pixels[yOffsetUsers + i][j+1	].styleCode = lb.users[i].bestTile;
+			}
+		}
+	}
+	if (!foundSelf) {
+		printlineInComponent("..", &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetUsername, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		while (strcmp(lb.users[i++].username, username)) {}
+
+		sprintf(buf,"%d", i);
+		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		printlineInComponent(lb.users[i-1].username, &sc->component, 0, xOffsetUsername, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		sprintf(buf,"%d", lb.users[i-1].bestScore);
+		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		sprintf(buf,"%d", 1<<lb.users[i-1].bestTile);
+		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		for (int j = 0; j < sc->cell_width; j++) {
+			sc->component.pixels[yOffsetUsers + leaderBoardRows][j+1].styleCode = lb.users[i-1].bestTile;
+		}
+	}
+}
+
+void updateScoreBoard(BoardComponent* sc, BoardState curState, BoardState prevState, Component* digits, Component scoreText, int* numberDecomposition) {
+	int topOffsetY = 2;
+	copySubComponentInComponent(scoreText, &sc->component, getXOffsetToCenterComponent(sc->component.width, scoreText.width), topOffsetY);
+
+	if (curState.score != prevState.score) {
+		int n_digits;
+		decomposeNumber(curState.score, &n_digits, numberDecomposition);
+		int scoreOffsetY = topOffsetY + scoreText.height + 1;
+		int scoreOffsetX = getXOffsetToCenterComponent(sc->component.width,3*n_digits);
+		for (int i = n_digits -1; i >=0; i--) {
+			copySubComponentInComponent(digits[numberDecomposition[i]],&sc->component, scoreOffsetX + 3*(n_digits-i-1), scoreOffsetY);
+		}
+	}
+	if (ranked) {
+		getLeaderBoard(&lb);
+		updateLeaderboard(&scoreBoard,lb);
+	}
+}
+
+void updateBestScore(BoardState state) {
+	if (state.score > bestScoreEver || state.maxTile > bestTileEver) {
+		UserState bestState;
+		strcpy(bestState.username,username);
+		bestState.bestScore = state.score;
+		bestState.bestTile = state.maxTile;
+		updateBest(bestState);
+	}
+}
 
 void loadUsername(char* username_) {
-	strcpy(username_, "cesx"); //provvisorio
+	uid_t ruid = getuid();
+	struct passwd* pwd;
+	pwd = getpwuid(ruid);
+	strcpy(username_, pwd->pw_name);
+	// strcpy(username_, "sas5"); //provvisorio
 }
 void redrawScreen() {
 	printf("\e[2J");
 	copyScreen(&screen, &nextScreen);
 	clearScreen(&screen);
 	render(screen, nextScreen);
+}
+
+void loadPersonalBest() {
+	bestScoreEver = 0;
+	bestTileEver = 0;
+	bool userExists = false;
+	checkUserExists(username, &userExists);
+	if (userExists) {
+		getPersonalBest(username, &bestScoreEver, &bestTileEver);
+		if (isStateValid(userState.state)) {
+			copyBoardState(&userState.state, &cur_state);
+		}
+	}
 }
 
 int setUpSession(int argc, char** argv) {
@@ -188,8 +268,9 @@ int setUpSession(int argc, char** argv) {
 		newComponent(&digitsComponents[i],3,3);
 	newComponent(&scoreText,3,16);
 	newComponent(&infoText,8,68);
-
-	load_digits(&scoreText, digitsComponents);
+	loadDigits(&scoreText, digitsComponents);
+	// getLeaderBoard(&lb);
+	// updateLeaderboard(&scoreBoard,lb);
 	newScreen(&screen, 3);
 	newScreen(&nextScreen, 3);
 	newBoardState(&userState.state, cur_state.n_rows, cur_state.n_cols);
@@ -198,10 +279,12 @@ int setUpSession(int argc, char** argv) {
 	if (ranked) {
 		bool userExists = false;
 		checkUserExists(username, &userExists);
+		loadPersonalBest();
 		if (userExists) {
 			getSavedBoardState(&userState);
-			copyBoardState(&userState.state, &cur_state);
-			copyBoardState(&userState.state, &prev_state);
+			if (isStateValid(userState.state)) {
+				copyBoardState(&userState.state, &cur_state);
+			}
 		}
 		else {
 			userState.bestScore=0;
@@ -210,9 +293,9 @@ int setUpSession(int argc, char** argv) {
 			addUser(userState);
 		}
 
-	}else {
-		initGame(&cur_state);
 	}
+	copyBoardState(&cur_state, &prev_state);
+	prev_state.score = 0;
 	return 0;
 }
 
@@ -226,6 +309,7 @@ void setUpGame() {
 	}
 	updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 	updateInfoBoard(&infoBoard, infoText);
+
 	redrawScreen();
 	render(screen, nextScreen);
 	game_over = 0;
@@ -239,7 +323,6 @@ int gameStep() {
 
 	if(input!='0'){
 		game_over = step(&cur_state, input, &prev_state, &undos);
-
 		for (int i = 0; i < n_rows; i++) {
 			for (int j = 0; j < n_cols; j++) {
 				updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
@@ -269,8 +352,9 @@ void tearDown() {
 	freeScreen(&nextScreen);
 	freeBoardState(&cur_state);
 	freeBoardState(&prev_state);
-	closeDb();
+	// closeDb();
 }
+
 int main(int argc, char** argv){
     rs = setUpSession(argc, argv);
 	if (rs)
@@ -285,9 +369,12 @@ int main(int argc, char** argv){
 
 			}
 		}while(!game_over && !exit_loop);
+		if (ranked) {
+			updateBestScore(cur_state);
+		}
 		if (!exit_loop)
 			initGame(&cur_state);
+
 	}
 	tearDown();
 }
-

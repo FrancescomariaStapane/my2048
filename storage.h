@@ -13,7 +13,7 @@ int updateBoardState(UserState userState);
 int getSavedBoardState(UserState* state);
 int getLeaderBoard(Leaderboard* leaderboard);
 int checkUserExists(char* username, bool* check);
-
+int getPersonalBest(char* username, int* bestScore, int* bestTile);
 
 #endif
 

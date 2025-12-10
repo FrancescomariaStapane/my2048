@@ -52,12 +52,24 @@ static int initLeaderBoard(void *leaderBoard, int argc, char **argv, char **azCo
     return 0;
 }
 
+static int loadPersonalBest(void *bestState, int argc, char **argv, char **azColName) {
+    if (argc != 2 || !argv[0] || !argv[1])
+        return -1;
+    UserState *bs = bestState;
+    bs->bestScore = atoi(argv[0]);
+    bs->bestTile = atoi(argv[1]);
+    return 0;
+}
+
+
 int openDb() {
     char *zErrMsg = 0;
     int rc = 0;
-    char* workingDir = getWorkingDir();
+    char workingDir[4096];
+    getWorkingDir(workingDir);
     char* dbFile = malloc(sizeof(char) * ( strlen(workingDir) + 16));
-    strcat(dbFile,"users.db");
+    sprintf(dbFile, "%s",workingDir);
+    strcat(dbFile,"/users.db");
     rc = sqlite3_open(dbFile, &db);
     free(dbFile);
     if( rc != SQLITE_OK ) {
@@ -95,7 +107,6 @@ int addUser(UserState user) {
         sqlite3_free(zErrMsg);
         return -1;
     }
-    return 0;
     free(boardValues);
     return 0;
 }
@@ -146,6 +157,23 @@ int getSavedBoardState(UserState* state) {
     return 0;
 }
 
+int getPersonalBest(char* username, int* bestScore, int* bestTile) {
+    char sql[4096];
+    sprintf(sql, "SELECT BEST_SCORE,BEST_TILE FROM LEADERBOARD WHERE NAME ='%s';",username);
+    char *zErrMsg = 0;
+    int rc = 0;
+    zErrMsg = 0;
+    UserState bestState;
+    rc = sqlite3_exec(db, sql, loadPersonalBest, &bestState, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr,("%s\n"),zErrMsg);
+        sqlite3_free(zErrMsg);
+        return -1;
+    }
+    *bestScore = bestState.bestScore;
+    *bestTile = bestState.bestTile;
+    return 0;
+}
 int getLeaderBoard(Leaderboard* leaderboard) {
     char *sql = "SELECT COUNT(*) FROM LEADERBOARD;";
     char *zErrMsg = 0;
@@ -157,7 +185,7 @@ int getLeaderBoard(Leaderboard* leaderboard) {
         return -1;
     }
 
-    sql = "SELECT NAME,BEST_SCORE,BEST_TILE FROM LEADERBOARD;";
+    sql = "SELECT NAME,BEST_SCORE,BEST_TILE FROM LEADERBOARD ORDER BY BEST_SCORE DESC;";
     zErrMsg = 0;
     rc = sqlite3_exec(db, sql, loadLeaderboard, leaderboard, &zErrMsg);
     if (rc != SQLITE_OK) {

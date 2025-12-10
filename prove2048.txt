@@ -1,12 +1,13 @@
 ╣ ╠ ║ ═ ╚ ╝ ╔ ╗ ╩ ╦ ╬
 
-cd; if [ $(cat .bashrc|grep /fstapane474/2048 | wc -l) -eq 0 ];then echo "alias 2048='/fstapane474/2048/2048'" >> .bashrc; . .bashrc fi;
+cd; if [ $(cat .bashrc|grep /fstapane474/2048 | wc -l) -eq 0 ];then echo "alias 2048='/fstapane474/2048/2048'" >> .bashrc; . .bashrc fi; cd -;
    █████████████████
    █               █
    █               █
    █               █
    █
-
+█User
+█ fstapanedesantis474 1234567 65536  █
 
    █████████████████
    █               █
@@ -17,7 +18,8 @@ cd; if [ $(cat .bashrc|grep /fstapane474/2048 | wc -l) -eq 0 ];then echo "alias 
    █               █
    █     
 
-
+ciaomichiamofranc..
+diciannovelettereee
 ╔═╗ ╗ ╔═╗╔═╗
 ╔═╝ ║  ═╣╠═╣
 ╚═╝ ╩ ╚═╝╚═╝

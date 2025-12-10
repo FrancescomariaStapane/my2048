@@ -1,5 +1,8 @@
 #include "renderer.h"
 #include<unistd.h>
+#include <bits/posix2_lim.h>
+
+#include "storage.h"
 
 
 int exit_no_memory(){
@@ -77,7 +80,8 @@ int getStyleCode(STYLE style){
             return -100;
         case OVER_4096:
             return -3;
-
+        case INVERTED:
+            return  -4;
         default:
             return (-1);
     }
@@ -255,6 +259,10 @@ void printStyledPixel(Pixel pixel){
             formatStart="\x1B[38;5;160m\x1B[48;5;78m\x1B[3m\x1B[9m";
             formatEnd = "\x1B[29m\x1B[23m\x1B[49m\x1B[39m";
             break;
+        case -4: //inverted
+            formatStart = "\x1B[7m\x1B[38;5;16m\x1B[48;5;247m";
+            formatEnd = "\x1B[39m\x1B[49m\x1B[27m";
+            break;
         default:
             formatStart = "";
             formatEnd = "";
@@ -364,7 +372,8 @@ void styleAllInComponent(Component* component, int styleCode) {
     }
 }
 int loadInfo(Component* ic) {
-    char* workingDir = getWorkingDir();
+    char workingDir[4096];
+    getWorkingDir(workingDir);
     char* fontDir = "/resources/info/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 
@@ -375,8 +384,9 @@ int loadInfo(Component* ic) {
     free(fileName);
     return 0;
 }
-int load_digits(Component* scoreText, Component* digits) {
-    char* workingDir = getWorkingDir();
+int loadDigits(Component* scoreText, Component* digits) {
+    char workingDir[4096];
+    getWorkingDir(workingDir);
     char* fontDir = "/resources/score/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
     for (int i = 0; i< 10; i++) {
@@ -392,6 +402,37 @@ int load_digits(Component* scoreText, Component* digits) {
     free(fileName);
     return 0;
 }
+
+void printlineInComponent(const char* str, Component* component, int styleCode, int x, int y, int limit) {
+    int i = 0;
+    while (str[i]) {
+        if (i >= limit) {
+            component->pixels[y][x-1].value[0] = '.';
+            component->pixels[y][x-2].value[0] = '.';
+            break;
+        }
+
+        component->pixels[y][x].value[0] = str[i++];
+        component->pixels[y][x].value[1] = 0;
+        component->pixels[y][x].styleCode=styleCode;
+        x++;
+    }
+}
+// int loadLeaderboard(BoardComponent* scoreComponent) {
+//     Component lbc;
+//     Leaderboard lb;
+//     getLeaderBoard(&lb);
+//     int yOffset = 9;//to account for score display and padding
+//     int leaderBoardRows = scoreComponent->cell_height - yOffset -1;
+//     for (int i = 0; i < lb.nOfUsers; i ++) {
+//         if (i == leaderBoardRows) {
+//             break;
+//         }
+//         printlineInComponent(lb.users[i].username, &scoreComponent->component, 0, 1, yOffset + i, 20);
+//     }
+//     return 0;
+//
+// }
 int copySubComponentInComponent(Component subComponent, Component* component, int offsetX, int offsetY) {
     if (subComponent.width + offsetX >= component->width || subComponent.height + offsetY >= component->height)
         return -1;

@@ -48,8 +48,8 @@ void initGame(BoardState* state){
 	state->score=0;
 }
 
-char* getWorkingDir() {
-	return("/home/franc/Desktop/2048");
+void getWorkingDir(char* cwd) {
+	strcpy(cwd, "/home/franc/Desktop/2048");
 }
 
 void printState(BoardState state){
@@ -156,8 +156,8 @@ void crunch_line(int* line, int len, BoardState* state){
 			int new_tile = 1<<line[wall];
 			wall++;
 			state -> score += new_tile;
-			if (new_tile > state -> maxTile) {
-				state -> maxTile = new_tile;
+			if (line[wall-1] > state -> maxTile) {
+				state -> maxTile = line[wall-1];
 			}
 			continue;
 		}
@@ -246,7 +246,7 @@ bool check_game_over(BoardState state){
 }
 
 void boardStateToStr(BoardState state, char* buf) {
-	int offset = sprintf(buf,"%d;%d;",state.n_cols,state.n_rows);
+	int offset = sprintf(buf,"%d;%d;%d;%d;",state.n_cols,state.n_rows,state.score,state.maxTile);
 	for(int i = 0; i < state.n_rows; i++) {
 		for( int j = 0; j < state.n_cols; j++) {
 			offset += sprintf(buf + offset, "%d ", state.values[i][j]);
@@ -265,6 +265,10 @@ int strToBoardState(BoardState* state, char* str) {
 	n_cols = atoi(token);
 	token = strtok(NULL, ";");
 	n_rows = atoi(token);
+	token = strtok(NULL, ";");
+	state->score = atoi(token);
+	token = strtok(NULL, ";");
+	state->maxTile = atoi(token);
 	if (n_cols != state->n_cols || n_rows != state->n_rows)
 		return  -1;
 	for(int i = 0; i < state->n_rows; i++) {

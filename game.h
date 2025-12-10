@@ -46,5 +46,5 @@ bool are_boards_equal(BoardState s1, BoardState s2);
 bool check_game_over(BoardState state);
 void boardStateToStr(BoardState state, char* buf);
 int strToBoardState(BoardState* state, char* str);
-char* getWorkingDir();
+void getWorkingDir(char* cwd);
 #endif

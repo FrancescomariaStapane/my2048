@@ -58,7 +58,8 @@ typedef enum STYLE{
     GRID,
     DEFAULT,
     TEST,
-    OVER_4096
+    OVER_4096,
+    INVERTED
 }STYLE;
 
 int newComponent(Component * component, int height, int width);
@@ -86,10 +87,11 @@ int getYOffsetDownPanel(Panel panel);
 int getPosOfBoardComponentCell(BoardComponent bc, int i, int j, int *x, int* y);
 int readCellFromFile(char* file, Component* cell, int cellHeight, int cellWidth );
 int copySubComponentInComponent(Component subComponent, Component* component, int offsetX, int offsetY);
-int load_digits(Component* scoreText, Component* digits);
+int loadDigits(Component* scoreText, Component* digits);
 void styleAllInComponent(Component* component, int styleCode);
 int getXOffsetToCenterComponent(int outerWidth, int innerWidth);
 void decomposeNumber(int number, int* n_digits, int* array);
 int loadInfo(Component* ic);
-
+void printlineInComponent(const char* str, Component* component, int styleCode, int x, int y, int limit);
+// int loadLeaderboard(BoardComponent* scoreComponent);
 #endif
