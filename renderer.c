@@ -373,7 +373,7 @@ void styleAllInComponent(Component* component, int styleCode) {
 }
 int loadInfo(Component* ic) {
     char workingDir[4096];
-    getWorkingDir(workingDir);
+    getProjectDir(workingDir);
     char* fontDir = "/resources/info/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 
@@ -386,7 +386,7 @@ int loadInfo(Component* ic) {
 }
 int loadDigits(Component* scoreText, Component* digits) {
     char workingDir[4096];
-    getWorkingDir(workingDir);
+    getProjectDir(workingDir);
     char* fontDir = "/resources/score/";
     char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
     for (int i = 0; i< 10; i++) {

@@ -5,8 +5,7 @@
 #include<string.h>
 #include<signal.h>
 #include<stdlib.h>
-
-
+#include "curses.h"
 static     struct termios old_termios, new_termios;
 // static int exit_loop = 0;
 
@@ -29,7 +28,7 @@ void configure_terminal(){
     tcgetattr(STDIN_FILENO, &old_termios);
     new_termios = old_termios;
     new_termios.c_lflag &= ~(ICANON | ECHO); //turn of echo and canonical mode
-    new_termios.c_cc[VMIN] = 0; // read can return instantly, there's no mimimum byte to be read
+    new_termios.c_cc[VMIN] = 1; // read cannot return instantly, waits for at least 1 byte
     new_termios.c_cc[VTIME] = 0; // read can return instantly, no waiting time
 
     tcsetattr(STDIN_FILENO, TCSANOW, &new_termios); //apply changes now
@@ -63,6 +62,7 @@ char read_key(char* buf, int k){
 char read_input(){
     char buf[4096]; //max input buffer
     int n = read(STDIN_FILENO, buf, sizeof(buf));
+
     char final_key='0';
     for(int k = 0; k <= n-1; k+=1){
         char key = read_key(buf, k);
@@ -72,6 +72,20 @@ char read_input(){
         // printf("final key: %c\n",final_key);
     }
     return final_key;
+}
+
+
+char read_input_curses() {
+    char c = getch();
+    switch (c) {
+        case 'A': return 'u';
+        case 'B': return 'd';
+        case 'C': return 'r';
+        case 'D': return 'l';
+        case 'R': return 's';
+        case 'u': return 'c';
+        default: return '0';
+    }
 }
 
 void print_key(char key){

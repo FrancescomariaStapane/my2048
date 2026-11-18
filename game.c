@@ -5,6 +5,8 @@
 #include <time.h>
 #include <stdbool.h>
 #include "game.h"
+
+#include <unistd.h>
 //#define state->n_rows 4
 //#define state->n_cols 4
 
@@ -47,10 +49,28 @@ void initGame(BoardState* state){
 	// state->maxTile=2; // cancella prev_state->v ???
 	state->score=0;
 	state->maxTile = 2;
+
 }
 
-void getWorkingDir(char* cwd) {
-	strcpy(cwd, "/home/franc/Desktop/2048");
+void getProjectDir(char* cwd) {
+
+	int length = readlink("/proc/self/exe", cwd, 4096);
+	cwd[length] = 0x0;
+	int i;
+	// sweep in forward order looking for terminator
+	for (i = 0; i<4096; i++) {
+		if (cwd[i]==0x0) {
+			break;
+		}
+	}
+	i--;
+	//go in reverse lookiing for '/' and truncating string, executable name is removed, path stays
+	while (cwd[i]!='/') {
+		cwd[i]=0x0;
+		i--;
+	}
+	strcat(cwd, "..");
+	// strcpy(cwd, "/home/franc/Desktop/my2048");
 }
 
 void printState(BoardState state){

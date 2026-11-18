@@ -14,10 +14,22 @@
 #include<unistd.h>
 #include <sys/ioctl.h>
 #include <pwd.h>
+#include "curses.h"
+
+
+void redrawScreen();
+void save_state();
 
 static int exit_loop = 0;
-void signal_handler(){
-    exit_loop = 1;
+void signal_handler(int signum){
+	if (signum == SIGWINCH) {
+		redrawScreen();
+	}
+	else {
+	    exit_loop = 1;
+		save_state();
+		exit(0);
+	}
 }
 
 
@@ -38,7 +50,7 @@ void updateGameCell(BoardComponent* bc, int i, int j, int value, int fontCode) {
 	int x = 0;
 	int y = 0;
 	char workingDir[4096];
-	getWorkingDir(workingDir);
+	getProjectDir(workingDir);
 	char* fontDir = "/resources/pipeSeriff/";
 	char* fileName = malloc(sizeof(char) * (strlen(fontDir) + strlen(workingDir) + 10));
 	sprintf(fileName, "%s%s%d.txt",workingDir,fontDir,value);
@@ -212,10 +224,10 @@ void loadUsername(char* username_) {
 	struct passwd* pwd;
 	pwd = getpwuid(ruid);
 	strcpy(username_, pwd->pw_name);
-	openDb();
+	// openDb(); //todo probs si puo togliere e metterlo solo a monte
 	getLeaderBoard(&lb);
 	// closeDb();
-	sprintf(username_,"sass%d",lb.nOfUsers);
+	// sprintf(username_,"sass%d",lb.nOfUsers);
 	// strcpy(username_, "sas9"); //provvisorio
 }
 void redrawScreen() {
@@ -232,9 +244,9 @@ void loadPersonalBest() {
 	checkUserExists(username, &userExists);
 	if (userExists) {
 		getPersonalBest(username, &bestScoreEver, &bestTileEver);
-		if (isStateValid(userState.state)) {
-			copyBoardState(&userState.state, &cur_state);
-		}
+		// if (isStateValid(userState.state)) {
+		// 	copyBoardState(&userState.state, &cur_state);
+		// }
 	}
 }
 
@@ -242,9 +254,9 @@ int setUpSession(int argc, char** argv) {
 	configure_terminal();
 	signal(SIGINT, signal_handler);
 	signal(SIGHUP, signal_handler);
-	signal( SIGWINCH, redrawScreen);
-	loadUsername(username);
+	signal( SIGWINCH, signal_handler);
 	openDb();
+	loadUsername(username);
 	int max_n_cols = 10;
 	int max_n_rows = 5;
 	if(argc == 3){
@@ -330,30 +342,37 @@ int gameStep() {
 				updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
 			}
 		}
-		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 		updateInfoBoard(&infoBoard, infoText);
+		if (ranked) {
+			updateBestScore(cur_state);
+		}
+		updateScoreBoard(&scoreBoard, cur_state, prev_state, digitsComponents, scoreText, numberDecomposition);
 		render(screen, nextScreen);
 		copyScreen(&screen, &nextScreen);
 
+
 		// print_state(cur_state);
 		// fprintf(stderr,"\n");
-		req.tv_nsec = 0.1 * 100000000; // 0.01 seconds
+		req.tv_nsec = 1 * 100000000; // 0.1 seconds
 		nanosleep(&req, &rem);
 	}
 	return 0;
 }
-
-void tearDown() {
-
+void save_state() {
 	if (ranked) {
 		strcpy(userState.username, username);
 		copyBoardState( &cur_state, &userState.state);
 		updateBoardState(userState);
 	}
+}
+void tearDown() {
+
+	save_state();
 	freeScreen(&screen);
 	freeScreen(&nextScreen);
 	freeBoardState(&cur_state);
 	freeBoardState(&prev_state);
+	// endwin();
 	// closeDb();
 }
 
@@ -364,20 +383,23 @@ int main(int argc, char** argv){
 	if (rs)
 		return rs;
 	// test();
+	// initscr();
+	ESCDELAY = 0;
 	while(!exit_loop){
 		setUpGame();
 		// tearDown();
 		do{
+
 			if (gameStep()) {
 				break;
 			}
 		}while(!game_over && !exit_loop);
-		if (ranked) {
-			updateBestScore(cur_state);
-		}
-		if (!exit_loop)
-			initGame(&cur_state);
 
+
+		if (!exit_loop) {
+			initGame(&cur_state);
+			save_state();
+		}
 	}
 	tearDown();
 }
