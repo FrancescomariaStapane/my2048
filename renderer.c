@@ -68,6 +68,7 @@ int newBoardComponent(BoardComponent* boardComponent, int n_rows, int n_cols, in
     boardComponent -> cell_width = cell_width;
     newComponent(&(boardComponent -> component), total_height, total_width);
     drawGameGrid(boardComponent);
+    return 0;
 }
 
 
@@ -405,6 +406,7 @@ int loadDigits(Component* scoreText, Component* digits) {
 
 void printlineInComponent(const char* str, Component* component, int styleCode, int x, int y, int limit) {
     int i = 0;
+
     while (str[i]) {
         if (i >= limit) {
             component->pixels[y][x-1].value[0] = '.';
@@ -415,6 +417,13 @@ void printlineInComponent(const char* str, Component* component, int styleCode, 
         component->pixels[y][x].value[0] = str[i++];
         component->pixels[y][x].value[1] = 0;
         component->pixels[y][x].styleCode=styleCode;
+        x++;
+    }
+    while (i < limit) {
+        component->pixels[y][x].value[0] = ' ';
+        component->pixels[y][x].value[1] = 0;
+        component->pixels[y][x].styleCode=styleCode;
+        i++;
         x++;
     }
 }

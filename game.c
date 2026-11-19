@@ -53,6 +53,8 @@ void initGame(BoardState* state){
 }
 
 void getProjectDir(char* cwd) {
+	// strcpy(cwd, "/home/franc/Desktop/my2048");
+	// return;
 
 	int length = readlink("/proc/self/exe", cwd, 4096);
 	cwd[length] = 0x0;

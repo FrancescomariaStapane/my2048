@@ -89,7 +89,7 @@ void setupScreen(Screen * screen, Screen* nextScreen, BoardComponent* gameBoard,
 	nextScreen->panels[2].offset_x = horizontalDistance ;
 	nextScreen->panels[2].offset_y = getYOffsetDownPanel(nextScreen->panels[0]) + verticalDistance ;
 	freeBoardComponent(scoreBoard);
-	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 36);
+	newBoardComponent(scoreBoard,1,1,gameBoard->component.height - 2, 46);
 	nextScreen->panels[1].component = &scoreBoard->component;
 	freeBoardComponent(infoBoard);
 	newBoardComponent(infoBoard,1,1, 8,  nextScreen->panels[1].component->width + nextScreen->panels[1].offset_x - 5);
@@ -137,17 +137,19 @@ void updateLeaderboard(BoardComponent* sc, Leaderboard lb) {
 	int yOffsetHeading = 10;//to account for score display and padding
 	int yOffsetUsers = yOffsetHeading + 2;
 	int leaderBoardRows = sc->cell_height - yOffsetUsers -1;
-	int maxUsernameChars = 16;
-	int maxScoreChars = 7;
+	int maxUsernameChars = 18;
+	int maxScoreChars = 10;
+	int maxTileChars = 8;
+	int maxPosChars = 3;
 	int xOffsetPos = 2;
-	int xOffsetUsername = xOffsetPos + 3;
+	int xOffsetUsername = xOffsetPos + maxPosChars + 1;
 	int xOffsetScore = xOffsetUsername + maxUsernameChars + 1;
 	int xOffsetTile = xOffsetScore + maxScoreChars + 1;
 
-	printlineInComponent("#", &scoreBoard.component, 0, xOffsetPos, yOffsetHeading, maxUsernameChars);
+	printlineInComponent("#", &scoreBoard.component, 0, xOffsetPos, yOffsetHeading, maxPosChars);
 	printlineInComponent("Username", &scoreBoard.component, 0, xOffsetUsername, yOffsetHeading, maxUsernameChars);
-	printlineInComponent("Score", &scoreBoard.component, 0, xOffsetScore, yOffsetHeading, maxUsernameChars);
-	printlineInComponent("Tile", &scoreBoard.component, 0, xOffsetTile, yOffsetHeading, maxUsernameChars);
+	printlineInComponent("Score", &scoreBoard.component, 0, xOffsetScore, yOffsetHeading, maxScoreChars);
+	printlineInComponent("Tile", &scoreBoard.component, 0, xOffsetTile, yOffsetHeading, maxTileChars);
 
 	bool foundSelf = false;
 	int i;
@@ -156,13 +158,19 @@ void updateLeaderboard(BoardComponent* sc, Leaderboard lb) {
 		if (i >= leaderBoardRows - 1) {
 			break;
 		}
+		for (int j = 0; j < sc->cell_width; j++) {
+			sc->component.pixels[yOffsetUsers + i][j+1	].value[0] =' ';
+		}
 		sprintf(buf,"%d", i+1);
-		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + i, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + i, maxPosChars);
 		printlineInComponent(lb.users[i].username, &sc->component, 0, xOffsetUsername, yOffsetUsers + i, maxUsernameChars);
 		sprintf(buf,"%d", lb.users[i].bestScore);
-		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + i, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + i, maxScoreChars);
 		sprintf(buf,"%d", 1<<lb.users[i].bestTile);
-		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + i, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + i, maxTileChars);
+		for (int j = 0; j < sc->cell_width; j++) {
+			sc->component.pixels[yOffsetUsers + i][j+1	].styleCode = 0;
+		}
 		if (!strcmp(lb.users[i].username, username)){
 			foundSelf = true;
 			for (int j = 0; j < sc->cell_width; j++) {
@@ -171,19 +179,20 @@ void updateLeaderboard(BoardComponent* sc, Leaderboard lb) {
 		}
 	}
 	if (!foundSelf) {
-		printlineInComponent("..", &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows - 1, maxPosChars);
 		printlineInComponent("..", &sc->component, 0, xOffsetUsername, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
-		printlineInComponent("..", &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
-		printlineInComponent("..", &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows - 1, maxUsernameChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows - 1, maxScoreChars);
+		printlineInComponent("..", &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows - 1, maxTileChars);
 		while (strcmp(lb.users[i++].username, username)) {}
 
 		sprintf(buf,"%d", i);
-		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetPos, yOffsetUsers + leaderBoardRows, maxPosChars);
 		printlineInComponent(lb.users[i-1].username, &sc->component, 0, xOffsetUsername, yOffsetUsers + leaderBoardRows, maxUsernameChars);
 		sprintf(buf,"%d", lb.users[i-1].bestScore);
-		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetScore, yOffsetUsers + leaderBoardRows, maxScoreChars);
 		sprintf(buf,"%d", 1<<lb.users[i-1].bestTile);
-		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows, maxUsernameChars);
+		printlineInComponent(buf, &sc->component, 0, xOffsetTile, yOffsetUsers + leaderBoardRows, maxTileChars);
+
 		for (int j = 0; j < sc->cell_width; j++) {
 			sc->component.pixels[yOffsetUsers + leaderBoardRows][j+1].styleCode = lb.users[i-1].bestTile;
 		}

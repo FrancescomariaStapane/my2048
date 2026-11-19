@@ -97,7 +97,7 @@ int addUser(UserState user) {
     char sql[4096];
     char *zErrMsg = 0;
     int rc = 0;
-    char* boardValues = malloc (sizeof(char)* 2 * user.state.n_cols * user.state.n_rows);
+    char* boardValues = malloc (sizeof(char) * 2 * user.state.n_cols * user.state.n_rows + 9);
     boardStateToStr(user.state, boardValues);
     sprintf(sql, "INSERT INTO LEADERBOARD (NAME,BOARD_STATE,BEST_SCORE,BEST_TILE) "\
         "VALUES ('%s', '%s', %d, %d); ", user.username, "4;4;0;2;1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0", user.bestScore, user.bestTile);
