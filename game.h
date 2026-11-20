@@ -37,7 +37,7 @@ void getRandEmptySquare(BoardState state, int* position);
 void crunch_board(BoardState* state, char move);
 void crunch_line(int* line, int len, BoardState* state);
 int get_new_tile_value();
-int step(BoardState* state, char move, BoardState* prev_state, int *undos);
+int step(BoardState* state, char move, BoardState* prev_state, int *undos, bool game_over);
 int fill_new_square(BoardState* state);
 int newBoardState(BoardState* state, int n_rows, int n_cols);
 void freeBoardState(BoardState* state);

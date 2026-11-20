@@ -21,6 +21,7 @@ void redrawScreen();
 void save_state();
 
 static int exit_loop = 0;
+static int restart = 0;
 void signal_handler(int signum){
 	if (signum == SIGWINCH) {
 		redrawScreen();
@@ -290,7 +291,7 @@ int setUpSession(int argc, char** argv) {
 	//digits are used to display score in score component
 	for (int i=0; i < 10; i++)
 		newComponent(&digitsComponents[i],3,3);
-	newComponent(&scoreText,3,16);
+	newComponent(&scoreText,3,21);
 	newComponent(&infoText,8,75);
 	loadDigits(&scoreText, digitsComponents);
 	// getLeaderBoard(&lb);
@@ -336,16 +337,19 @@ void setUpGame() {
 	redrawScreen();
 	render(screen, nextScreen);
 	game_over = 0;
+	restart = 0;
 }
 
 int gameStep() {
 	input = read_input();
+
 	if(input=='s'){
+		restart = 1;
 		return 1;
 	}
 
 	if(input!='0'){
-		game_over = step(&cur_state, input, &prev_state, &undos);
+		game_over = step(&cur_state, input, &prev_state, &undos, game_over);
 		for (int i = 0; i < n_rows; i++) {
 			for (int j = 0; j < n_cols; j++) {
 				updateGameCell(&gameBoard, i, j, cur_state.values[i][j],0);
@@ -398,14 +402,13 @@ int main(int argc, char** argv){
 		setUpGame();
 		// tearDown();
 		do{
-
 			if (gameStep()) {
 				break;
 			}
-		}while(!game_over && !exit_loop);
+		}while(!exit_loop);
 
 
-		if (!exit_loop) {
+		if (restart) {
 			initGame(&cur_state);
 			save_state();
 		}

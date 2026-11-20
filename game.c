@@ -205,16 +205,19 @@ int fill_new_square(BoardState* state){
 	return 0;
 }
 
-int step(BoardState* state, char move, BoardState* prev_state, int *undos){
+int step(BoardState* state, char move, BoardState* prev_state, int *undos, bool game_over){
 	bool is_new_move=true;
 	BoardState tmp_state;
+
 	newBoardState(&tmp_state, state->n_rows, state->n_cols);
 	copyBoardState(state, &tmp_state);
+	int undoing = 0;
 	if(move == 'c'){
 		is_new_move = false;
 		copyBoardState(prev_state, state);
+		undoing = 1;
 	}
-	else{
+	else if (!game_over){
 		crunch_board(state, move);
 		//printf("prevstate: {\n");
 		//print_state(*prev_state);
@@ -225,6 +228,8 @@ int step(BoardState* state, char move, BoardState* prev_state, int *undos){
 		//printf("}\n");
 		is_new_move = !are_boards_equal(tmp_state, *state);
 
+	}else {
+		is_new_move = false;
 	}
 	if(is_new_move){
 		
